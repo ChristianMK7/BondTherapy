@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terms of Service — Bond Therapy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6fc;--text:#0f1f3a;--muted:#67748d;--primary:#2b6cff;--line:rgba(15,31,58,.08)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:780px;margin:0 auto;padding:48px 24px 80px}
+header{margin-bottom:32px}
+header a{color:var(--primary);font-weight:600;font-size:.9rem;text-decoration:none}
+h1{font-family:'Playfair Display',serif;font-size:2.2rem;margin:24px 0 8px}
+.updated{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+.placeholder{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:14px 16px;border-radius:12px;font-size:.92rem;margin-bottom:28px}
+h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin:28px 0 10px}
+p, li{color:#1f2a44;font-size:.98rem}
+ul{padding-left:22px;margin:8px 0 14px}
+li{margin-bottom:6px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:32px;box-shadow:0 10px 30px rgba(22,52,120,.06)}
+footer{margin-top:32px;color:var(--muted);font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="/">← Back to Bond Therapy</a></header>
+  <div class="card">
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: <span id="date"></span></p>
+
+    <div class="placeholder">
+      <strong>Placeholder content.</strong> This page is a template. Replace it with terms reviewed by qualified counsel before public launch.
+    </div>
+
+    <p>By using Bond Therapy, you agree to these terms. Please read them carefully.</p>
+
+    <h2>What Bond Therapy is</h2>
+    <p>Bond Therapy is a directory that helps people find licensed therapists and book sessions. We are not a healthcare provider; we do not deliver therapy ourselves. Therapy services are provided by independent professionals listed on the platform.</p>
+
+    <h2>Not a medical or emergency service</h2>
+    <p>Bond Therapy is not a substitute for emergency care. If you are in crisis or experiencing a mental health emergency, contact your local emergency number immediately.</p>
+
+    <h2>Accounts</h2>
+    <ul>
+      <li>You must provide accurate information when creating an account.</li>
+      <li>You are responsible for keeping your password secure.</li>
+      <li>You may not impersonate others or create accounts on someone else's behalf without permission.</li>
+    </ul>
+
+    <h2>Bookings and payments</h2>
+    <ul>
+      <li>Bookings are arrangements between you and the therapist. We facilitate scheduling and payment confirmation.</li>
+      <li>Payment is made via the methods listed at checkout. You agree to provide accurate payment references.</li>
+      <li>Cancellation policies vary by therapist and are shown on their profile.</li>
+    </ul>
+
+    <h2>Therapist listings</h2>
+    <p>Therapists are responsible for the accuracy of their credentials and the services they provide. We review applications but cannot guarantee any outcome of a therapy session.</p>
+
+    <h2>Acceptable use</h2>
+    <p>You agree not to misuse the platform, including abusing other users, attempting to access accounts you do not own, or interfering with the operation of the service.</p>
+
+    <h2>Limitation of liability</h2>
+    <p>To the maximum extent permitted by law, Bond Therapy is not liable for damages arising from your use of the platform or from interactions with therapists listed on the platform.</p>
+
+    <h2>Changes</h2>
+    <p>We may update these terms from time to time. Continued use of the platform after changes means you accept the updated terms.</p>
+
+    <h2>Contact</h2>
+    <p>For questions about these terms, please use the contact form on our main site.</p>
+  </div>
+  <footer>© <span id="year"></span> Bond Therapy</footer>
+</div>
+<script>
+  document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
