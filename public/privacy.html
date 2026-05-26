@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Bond Therapy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6fc;--text:#0f1f3a;--muted:#67748d;--primary:#2b6cff;--line:rgba(15,31,58,.08)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:780px;margin:0 auto;padding:48px 24px 80px}
+header{margin-bottom:32px}
+header a{color:var(--primary);font-weight:600;font-size:.9rem;text-decoration:none}
+h1{font-family:'Playfair Display',serif;font-size:2.2rem;margin:24px 0 8px}
+.updated{color:var(--muted);font-size:.9rem;margin-bottom:24px}
+.placeholder{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:14px 16px;border-radius:12px;font-size:.92rem;margin-bottom:28px}
+h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin:28px 0 10px}
+p, li{color:#1f2a44;font-size:.98rem}
+ul{padding-left:22px;margin:8px 0 14px}
+li{margin-bottom:6px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:32px;box-shadow:0 10px 30px rgba(22,52,120,.06)}
+footer{margin-top:32px;color:var(--muted);font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="/">← Back to Bond Therapy</a></header>
+  <div class="card">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: <span id="date"></span></p>
+
+    <div class="placeholder">
+      <strong>Placeholder content.</strong> This page is a template. Replace it with a policy reviewed by qualified counsel before public launch.
+    </div>
+
+    <p>Bond Therapy (“we”, “us”) respects your privacy. This policy describes the information we collect when you use our website and services, how we use it, and the choices you have.</p>
+
+    <h2>Information we collect</h2>
+    <ul>
+      <li>Account details you provide (name, email, phone number, password).</li>
+      <li>Therapist application materials (bio, credentials, CV, photo, certificates).</li>
+      <li>Booking details (date, time, session type, payment reference).</li>
+      <li>Messages you send through our contact form.</li>
+      <li>Basic technical data (IP address, browser, pages visited) for security and analytics.</li>
+    </ul>
+
+    <h2>How we use information</h2>
+    <ul>
+      <li>To create and manage your account.</li>
+      <li>To process bookings and communicate with you about them.</li>
+      <li>To review and verify therapist applications.</li>
+      <li>To respond to messages and provide support.</li>
+      <li>To detect and prevent abuse of the service.</li>
+    </ul>
+
+    <h2>Sharing</h2>
+    <p>We do not sell your personal information. We share booking details with the therapist you book with, and only the data needed to fulfil that booking. We may share information with service providers (hosting, email) under appropriate confidentiality terms, or where required by law.</p>
+
+    <h2>Data retention</h2>
+    <p>We keep your information for as long as your account is active or as needed to provide our services and comply with legal obligations.</p>
+
+    <h2>Your rights</h2>
+    <p>You may request access to, correction of, or deletion of your personal data by contacting us. You may close your account at any time.</p>
+
+    <h2>Security</h2>
+    <p>We use industry-standard measures to protect your data, including password hashing, encrypted transport (HTTPS) in production, and access controls on administrative tools.</p>
+
+    <h2>Contact</h2>
+    <p>For privacy questions, please use the contact form on our main site.</p>
+  </div>
+  <footer>© <span id="year"></span> Bond Therapy</footer>
+</div>
+<script>
+  document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
