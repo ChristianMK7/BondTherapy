@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Therapist Portal — Bond Therapy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f6ff;
+  --card:#ffffff;
+  --primary:#2b6cff;
+  --primary-2:#5a8dff;
+  --primary-3:#dbe8ff;
+  --accent:#1e3a8a;
+  --text:#0f1f3d;
+  --muted:#5d6b83;
+  --border:rgba(43,108,255,.14);
+  --shadow:0 20px 60px rgba(22,52,120,.10);
+  --shadow-soft:0 8px 28px rgba(22,52,120,.08);
+  --radius:22px;
+  --radius-sm:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.6;
+  background:#0a1628;
+}
+
+/* ── ANIMATED BACKGROUND ── */
+.bg-canvas{
+  position:fixed;inset:0;z-index:0;
+  background:linear-gradient(135deg,#0a1628 0%,#0f2044 40%,#0a1a38 70%,#061020 100%);
+  overflow:hidden;
+}
+.bg-canvas::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%,rgba(43,108,255,.18),transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 80%,rgba(90,141,255,.14),transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 50%,rgba(30,58,138,.20),transparent 60%);
+  animation:bgPulse 12s ease-in-out infinite alternate;
+}
+@keyframes bgPulse{
+  0%{opacity:.7;transform:scale(1)}
+  100%{opacity:1;transform:scale(1.04)}
+}
+.blob{
+  position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none;
+  animation:blobDrift linear infinite;
+}
+.blob-1{width:420px;height:420px;background:rgba(43,108,255,.12);top:-10%;left:-8%;animation-duration:40s;animation-name:drift1;will-change:transform}
+.blob-2{width:320px;height:320px;background:rgba(90,141,255,.10);top:30%;right:-5%;animation-duration:46s;animation-name:drift2;will-change:transform}
+.blob-3{width:280px;height:280px;background:rgba(30,64,175,.14);bottom:10%;left:20%;animation-duration:38s;animation-name:drift3;will-change:transform}
+.blob-4{width:200px;height:200px;background:rgba(59,130,246,.08);top:60%;right:25%;animation-duration:44s;animation-name:drift4;will-change:transform}
+@keyframes drift1{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(35px,-20px,0)}}
+@keyframes drift2{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-35px,25px,0)}}
+@keyframes drift3{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(40px,-30px,0)}}
+@keyframes drift4{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-30px,35px,0)}}
+@media (prefers-reduced-motion: reduce){.blob{animation:none !important}}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(22px);
+  background:rgba(10,22,40,.72);
+  border-bottom:1px solid rgba(43,108,255,.15);
+}
+.nav{
+  max-width:1100px;margin:0 auto;padding:0 24px;
+  height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{
+  width:44px;height:44px;border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  display:grid;place-items:center;
+  box-shadow:0 8px 20px rgba(43,108,255,.30);
+}
+.brand-mark svg{width:22px;height:22px;color:#fff}
+.brand-name{font-family:'Playfair Display',serif;font-size:1.3rem;color:#fff;font-weight:700}
+.brand-sub{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);display:block;margin-top:2px}
+.back-link{
+  display:inline-flex;align-items:center;gap:8px;
+  color:rgba(255,255,255,.60);font-size:.88rem;font-weight:600;
+  text-decoration:none;
+  padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  transition:all .2s;
+}
+.back-link:hover{color:#fff;border-color:rgba(43,108,255,.40);background:rgba(43,108,255,.10)}
+.back-link svg{width:16px;height:16px}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px 80px}
+
+/* ── HERO ── */
+.portal-hero{padding:60px 0 44px;text-align:center}
+.step-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(43,108,255,.12);border:1px solid rgba(43,108,255,.22);
+  border-radius:999px;padding:9px 16px;
+  color:#7eb3ff;font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  margin-bottom:20px;
+}
+.step-badge span{width:7px;height:7px;border-radius:50%;background:#5a8dff;display:block}
+.portal-hero h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.8rem,5vw,4.6rem);
+  line-height:1;letter-spacing:-.03em;
+  color:#fff;margin-bottom:14px;
+}
+.portal-hero h1 em{font-style:italic;color:#7eb3ff}
+.portal-hero p{color:rgba(255,255,255,.55);font-size:1.05rem;max-width:560px;margin:0 auto 32px}
+
+/* ── PROGRESS STEPPER ── */
+.stepper{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  margin-bottom:44px;flex-wrap:wrap;row-gap:16px;
+}
+.step-item{display:flex;align-items:center;gap:0}
+.step-bubble{
+  width:42px;height:42px;border-radius:50%;
+  display:grid;place-items:center;font-weight:800;font-size:.88rem;
+  border:2px solid rgba(255,255,255,.14);color:rgba(255,255,255,.35);
+  background:rgba(255,255,255,.04);
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  position:relative;cursor:pointer;
+}
+.step-bubble.active{
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  border-color:transparent;color:#fff;
+  box-shadow:0 8px 24px rgba(43,108,255,.40);
+  transform:scale(1.12);
+}
+.step-bubble.done{
+  background:rgba(43,108,255,.18);border-color:rgba(43,108,255,.36);color:#7eb3ff;
+}
+.step-bubble.done::after{
+  content:'✓';position:absolute;inset:0;display:grid;place-items:center;
+  background:rgba(43,108,255,.20);border-radius:50%;
+}
+.step-label{
+  font-size:.74rem;font-weight:700;color:rgba(255,255,255,.35);
+  position:absolute;top:50px;left:50%;transform:translateX(-50%);white-space:nowrap;
+}
+.step-item .step-bubble{position:relative}
+.step-item .step-bubble.active .step-label{color:#7eb3ff}
+.step-connector{width:56px;height:2px;background:rgba(255,255,255,.08);flex:0 0 auto}
+.step-connector.filled{background:linear-gradient(90deg,rgba(43,108,255,.50),rgba(43,108,255,.20))}
+
+/* ── FORM CARD ── */
+.form-card{
+  background:rgba(255,255,255,.97);
+  border:1px solid rgba(43,108,255,.12);
+  border-radius:28px;
+  box-shadow:0 30px 80px rgba(2,10,30,.28);
+  overflow:hidden;
+}
+.form-card-head{
+  padding:28px 32px 24px;
+  background:linear-gradient(135deg,#f8fbff 0%,#edf4ff 100%);
+  border-bottom:1px solid rgba(43,108,255,.10);
+  display:flex;align-items:center;gap:16px;
+}
+.step-icon{
+  width:52px;height:52px;border-radius:16px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  display:grid;place-items:center;
+  box-shadow:0 10px 24px rgba(43,108,255,.22);
+}
+.step-icon svg{width:24px;height:24px;color:#fff}
+.form-card-head h2{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--text);line-height:1.1;margin-bottom:4px}
+.form-card-head p{color:var(--muted);font-size:.94rem}
+.form-body{padding:30px 32px}
+
+/* ── FIELDS ── */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.field-row.triple{grid-template-columns:1fr 1fr 1fr}
+.field-row.solo{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-size:.76rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field label .req{color:var(--primary);margin-left:2px}
+.inp,.sel,.area{
+  border:1.5px solid rgba(16,32,58,.12);
+  border-radius:var(--radius-sm);
+  background:#fafcff;
+  color:var(--text);
+  padding:13px 16px;
+  font-family:'DM Sans',sans-serif;
+  font-size:.96rem;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+  width:100%;
+}
+.inp:focus,.sel:focus,.area:focus{
+  border-color:rgba(43,108,255,.44);
+  box-shadow:0 0 0 4px rgba(43,108,255,.08);
+  background:#fff;
+}
+.inp::placeholder,.area::placeholder{color:rgba(16,32,58,.28)}
+.area{resize:vertical;min-height:110px}
+
+/* FILE UPLOAD */
+.upload-zone{
+  border:2px dashed rgba(43,108,255,.22);
+  border-radius:var(--radius-sm);
+  background:rgba(43,108,255,.03);
+  padding:28px 20px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+}
+.upload-zone:hover{border-color:rgba(43,108,255,.40);background:rgba(43,108,255,.06)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-zone .upload-icon{width:44px;height:44px;border-radius:12px;background:rgba(43,108,255,.08);display:grid;place-items:center;margin:0 auto 10px;color:var(--primary)}
+.upload-zone .upload-icon svg{width:22px;height:22px}
+.upload-zone p{color:var(--muted);font-size:.9rem}
+.upload-zone strong{color:var(--primary)}
+.file-preview{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-radius:12px;
+  background:rgba(43,108,255,.06);border:1px solid rgba(43,108,255,.12);
+  margin-top:10px;font-size:.88rem;color:var(--accent);font-weight:600;
+}
+.file-preview svg{width:16px;height:16px;flex:0 0 auto}
+.file-preview button{margin-left:auto;border:none;background:none;cursor:pointer;color:var(--muted);font-size:1.1rem}
+
+/* AVAILABILITY GRID */
+.avail-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:6px}
+.day-card{
+  border:1.5px solid rgba(16,32,58,.10);border-radius:14px;
+  padding:12px 8px;text-align:center;cursor:pointer;
+  transition:all .2s;background:#fafcff;
+  user-select:none;
+}
+.day-card.on{
+  background:rgba(43,108,255,.08);border-color:rgba(43,108,255,.30);
+  box-shadow:0 4px 12px rgba(43,108,255,.10);
+}
+.day-card .day-name{font-size:.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.day-card.on .day-name{color:var(--primary)}
+.day-toggle{width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(16,32,58,.14);background:#fff;display:grid;place-items:center;margin:8px auto 0;cursor:pointer}
+.day-card.on .day-toggle{background:linear-gradient(135deg,var(--primary),var(--primary-2));border-color:transparent}
+.day-toggle svg{width:14px;height:14px;color:var(--muted)}
+.day-card.on .day-toggle svg{color:#fff}
+
+/* TIME PICKERS */
+.time-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.time-label{font-size:.74rem;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;display:block;margin-bottom:6px}
+
+/* SESSION TYPES */
+.session-types{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.type-card{
+  border:1.5px solid rgba(16,32,58,.10);border-radius:14px;
+  padding:16px;cursor:pointer;
+  transition:all .2s;background:#fafcff;
+  display:flex;flex-direction:column;gap:8px;
+}
+.type-card.active{background:rgba(43,108,255,.06);border-color:rgba(43,108,255,.30)}
+.type-card .type-name{font-weight:700;font-size:.96rem;color:var(--text)}
+.type-card .type-desc{font-size:.84rem;color:var(--muted)}
+.type-check{width:22px;height:22px;border-radius:7px;border:2px solid rgba(16,32,58,.14);background:#fff;margin-left:auto;flex:0 0 auto;display:grid;place-items:center}
+.type-card.active .type-check{background:linear-gradient(135deg,var(--primary),var(--primary-2));border-color:transparent}
+.type-check svg{width:12px;height:12px;color:#fff}
+
+/* PAYMENT TOGGLE */
+.pay-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pay-card{
+  border:1.5px solid rgba(16,32,58,.10);border-radius:14px;
+  padding:14px 16px;cursor:pointer;transition:all .2s;background:#fafcff;
+  display:flex;align-items:center;gap:12px;
+}
+.pay-card.active{background:rgba(43,108,255,.06);border-color:rgba(43,108,255,.30)}
+.pay-logo{
+  width:38px;height:38px;border-radius:10px;background:rgba(43,108,255,.08);
+  display:grid;place-items:center;font-weight:800;font-size:.78rem;color:var(--primary);flex:0 0 auto;
+}
+.pay-card strong{font-size:.94rem;font-weight:700;display:block}
+.pay-card span{font-size:.78rem;color:var(--muted)}
+
+/* SPECIALTY PILLS */
+.pill-grid{display:flex;flex-wrap:wrap;gap:9px}
+.pill{
+  padding:9px 14px;border-radius:999px;
+  border:1.5px solid rgba(16,32,58,.10);background:#fafcff;
+  font-size:.84rem;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:all .2s;user-select:none;
+}
+.pill.on{background:rgba(43,108,255,.08);border-color:rgba(43,108,255,.28);color:var(--primary)}
+
+/* LANGUAGES */
+.lang-grid{display:flex;flex-wrap:wrap;gap:9px}
+
+/* SLIDER */
+.slider-wrap{margin-top:4px}
+.price-slider{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:5px;border-radius:999px;
+  background:linear-gradient(90deg,var(--primary) 0%,var(--primary-3) 100%);
+  outline:none;cursor:pointer;
+}
+.price-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  box-shadow:0 4px 12px rgba(43,108,255,.36);cursor:pointer;
+  border:2px solid #fff;
+}
+.price-display{
+  display:flex;align-items:center;justify-content:space-between;margin-top:8px;
+}
+.price-val{
+  font-size:1.3rem;font-weight:800;color:var(--primary);
+  font-family:'Playfair Display',serif;
+}
+.price-note{font-size:.82rem;color:var(--muted)}
+
+/* NOTICE */
+.notice{
+  background:#eff6ff;border:1px solid rgba(43,108,255,.14);
+  border-radius:14px;padding:14px 16px;
+  display:flex;gap:12px;align-items:flex-start;
+  color:#1e3a8a;font-size:.88rem;margin-bottom:22px;
+}
+.notice svg{width:18px;height:18px;flex:0 0 auto;margin-top:1px;color:var(--primary)}
+
+/* DIVIDER */
+.divider{height:1px;background:rgba(16,32,58,.07);margin:26px 0}
+.section-head{margin-bottom:18px}
+.section-head h3{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.section-head p{font-size:.88rem;color:var(--muted)}
+
+/* NAV BUTTONS */
+.form-footer{
+  padding:22px 32px;
+  background:linear-gradient(135deg,#f8fbff 0%,#f0f6ff 100%);
+  border-top:1px solid rgba(43,108,255,.10);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  border:none;cursor:pointer;border-radius:999px;
+  padding:14px 24px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.96rem;
+  transition:all .22s;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  color:#fff;box-shadow:0 12px 28px rgba(43,108,255,.24);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(43,108,255,.32)}
+.btn-ghost{background:rgba(43,108,255,.07);color:var(--primary);border:1px solid rgba(43,108,255,.16)}
+.btn-ghost:hover{background:rgba(43,108,255,.12)}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid rgba(16,32,58,.12)}
+.btn-outline:hover{border-color:rgba(43,108,255,.28);color:var(--primary)}
+.btn svg{width:18px;height:18px}
+
+.progress-bar{
+  height:4px;background:linear-gradient(90deg,var(--primary),var(--primary-2));
+  border-radius:0 0 0 0;transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+
+/* SUCCESS SCREEN */
+.success-screen{
+  display:none;text-align:center;padding:60px 32px;
+}
+.success-icon{
+  width:86px;height:86px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(43,108,255,.12),rgba(90,141,255,.12));
+  border:2px solid rgba(43,108,255,.20);
+  display:grid;place-items:center;margin:0 auto 24px;
+  animation:successPop .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes successPop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.success-icon svg{width:40px;height:40px;color:var(--primary)}
+.success-screen h2{font-family:'Playfair Display',serif;font-size:2.4rem;color:var(--text);margin-bottom:12px}
+.success-screen p{color:var(--muted);font-size:1.02rem;max-width:480px;margin:0 auto 28px}
+.status-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.20);
+  border-radius:999px;padding:10px 18px;
+  color:#92400e;font-weight:700;font-size:.88rem;margin-bottom:28px;
+}
+.status-pill span{width:8px;height:8px;border-radius:50%;background:#f59e0b;display:block}
+
+/* TOAST */
+.toast{
+  position:fixed;right:20px;bottom:20px;z-index:200;
+  background:#0f2450;color:#fff;border-radius:16px;
+  padding:14px 20px;box-shadow:0 20px 50px rgba(0,0,0,.28);
+  max-width:340px;font-size:.92rem;font-weight:600;
+  opacity:0;transform:translateY(10px);transition:.25s;
+  display:flex;align-items:center;gap:10px;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast svg{width:18px;height:18px;flex:0 0 auto;color:#7eb3ff}
+
+/* ERROR */
+.err{font-size:.78rem;color:#ef4444;margin-top:4px;display:none}
+.inp.invalid,.sel.invalid,.area.invalid{border-color:#fca5a5;background:#fff5f5}
+
+@media(max-width:820px){
+  .field-row,.field-row.triple{grid-template-columns:1fr}
+  .avail-grid{grid-template-columns:repeat(4,1fr)}
+  .form-body{padding:24px 20px}
+  .form-card-head{padding:22px 20px}
+  .form-footer{padding:18px 20px;flex-direction:column}
+  .form-footer .btn{width:100%;justify-content:center}
+  .stepper{gap:0}
+  .step-connector{width:32px}
+}
+@media(max-width:560px){
+  .avail-grid{grid-template-columns:repeat(3,1fr)}
+  .session-types,.pay-row,.time-fields{grid-template-columns:1fr}
+  .portal-hero h1{font-size:2.6rem}
+  .wrap{padding:0 16px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- BG -->
+<div class="bg-canvas" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+</div>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <nav class="nav">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Bond Therapy</div>
+        <span class="brand-sub">Therapist Portal</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <a href="/therapist-portal" class="back-link" style="color:var(--primary-2)">Already registered? Log in →</a>
+      <a href="mainweb.html" class="back-link" onclick="goHome()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Back to main site
+      </a>
+    </div>
+  </nav>
+  <div class="progress-bar" id="progressBar" style="width:20%"></div>
+</header>
+
+<!-- MAIN -->
+<div class="wrap">
+  <!-- HERO -->
+  <div class="portal-hero">
+    <div class="step-badge"><span></span>Join our network</div>
+    <h1>Your <em>therapist</em> profile<br>starts here</h1>
+    <p>Complete your profile in 5 simple steps. Once submitted, our admin team will review and publish your listing on the main directory.</p>
+  </div>
+
+  <!-- STEPPER -->
+  <div class="stepper" id="stepper">
+    <div class="step-item">
+      <div class="step-bubble active" id="sb1" onclick="gotoStep(1)">1<span class="step-label">Personal</span></div>
+    </div>
+    <div class="step-connector" id="sc1"></div>
+    <div class="step-item">
+      <div class="step-bubble" id="sb2" onclick="gotoStep(2)">2<span class="step-label">Professional</span></div>
+    </div>
+    <div class="step-connector" id="sc2"></div>
+    <div class="step-item">
+      <div class="step-bubble" id="sb3" onclick="gotoStep(3)">3<span class="step-label">Availability</span></div>
+    </div>
+    <div class="step-connector" id="sc3"></div>
+    <div class="step-item">
+      <div class="step-bubble" id="sb4" onclick="gotoStep(4)">4<span class="step-label">Pricing</span></div>
+    </div>
+    <div class="step-connector" id="sc4"></div>
+    <div class="step-item">
+      <div class="step-bubble" id="sb5" onclick="gotoStep(5)">5<span class="step-label">Review</span></div>
+    </div>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="form-card">
+
+    <!-- ─── STEP 1: PERSONAL INFO ─── -->
+    <div id="step1">
+      <div class="form-card-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Personal Information</h2>
+          <p>Your basic contact and identification details</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          All fields marked with <strong style="color:var(--primary)">*</strong> are required. Your profile will be reviewed before going live.
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>First Name <span class="req">*</span></label>
+            <input class="inp" id="firstName" type="text" placeholder="e.g. Maya" />
+            <span class="err" id="firstNameErr">Please enter your first name</span>
+          </div>
+          <div class="field">
+            <label>Last Name <span class="req">*</span></label>
+            <input class="inp" id="lastName" type="text" placeholder="e.g. Khoury" />
+            <span class="err" id="lastNameErr">Please enter your last name</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Title / Prefix</label>
+            <select class="sel" id="titlePrefix">
+              <option value="Dr.">Dr.</option>
+              <option value="Prof.">Prof.</option>
+              <option value="Mr.">Mr.</option>
+              <option value="Mrs.">Mrs.</option>
+              <option value="Ms.">Ms.</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <select class="sel" id="gender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Email Address <span class="req">*</span></label>
+            <input class="inp" id="email" type="email" placeholder="you@example.com" />
+            <span class="err" id="emailErr">Please enter a valid email</span>
+          </div>
+          <div class="field">
+            <label>Phone Number <span class="req">*</span></label>
+            <input class="inp" id="phone" type="tel" placeholder="+961 XX XXX XXX" />
+            <span class="err" id="phoneErr">Please enter your phone number</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>City <span class="req">*</span></label>
+            <select class="sel" id="city">
+              <option value="">Select city</option>
+              <option>Beirut</option>
+              <option>Jounieh</option>
+              <option>Tripoli</option>
+              <option>Zahle</option>
+              <option>Saida</option>
+              <option>Baabda</option>
+              <option>Jdeideh</option>
+              <option>Other</option>
+            </select>
+            <span class="err" id="cityErr">Please select your city</span>
+          </div>
+          <div class="field">
+            <label>Clinic / Practice Address</label>
+            <input class="inp" id="address" type="text" placeholder="Street, Building, District" />
+          </div>
+        </div>
+
+        <div class="field-row solo">
+          <div class="field">
+            <label>Short Bio <span class="req">*</span></label>
+            <textarea class="area" id="bio" placeholder="Write a warm, welcoming 2–4 sentence description of your practice focus and approach. This appears on your public listing."></textarea>
+            <span class="err" id="bioErr">Please write a short bio</span>
+          </div>
+        </div>
+
+        <div class="field-row solo">
+          <div class="field">
+            <label>Choose a password <span class="req">*</span></label>
+            <input class="inp" id="password" type="password" placeholder="At least 6 characters — you'll use this to log in" autocomplete="new-password" />
+            <span class="err" id="passwordErr">Password must be at least 6 characters</span>
+            <p style="font-size:.8rem;color:var(--muted);margin-top:6px">After submitting, you can log in at <a href="/therapist-portal" style="color:var(--primary);font-weight:600">/therapist-portal</a> to track your application and see bookings.</p>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Languages</h3>
+          <p>Select all languages you are comfortable conducting sessions in</p>
+        </div>
+        <div class="lang-grid pill-grid" id="langGrid">
+          <div class="pill on" data-val="Arabic" onclick="togglePill(this,'lang')">Arabic</div>
+          <div class="pill" data-val="English" onclick="togglePill(this,'lang')">English</div>
+          <div class="pill" data-val="French" onclick="togglePill(this,'lang')">French</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Profile Photo</h3>
+          <p>Upload a professional headshot (optional but recommended)</p>
+        </div>
+        <div class="upload-zone" id="photoZone">
+          <input type="file" accept="image/*" onchange="handleFile(this,'photo')" />
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+          <p><strong>Click to upload</strong> or drag & drop</p>
+          <p style="font-size:.8rem;margin-top:4px">JPG, PNG — max 5MB</p>
+        </div>
+        <div id="photoPreview"></div>
+      </div>
+      <div class="form-footer">
+        <span style="color:var(--muted);font-size:.88rem">Step 1 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(1)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 2: PROFESSIONAL INFO ─── -->
+    <div id="step2" style="display:none">
+      <div class="form-card-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Professional Background</h2>
+          <p>Credentials, specialties, and experience</p>
+        </div>
+      </div>
+      <div class="form-body">
+
+        <div class="field-row">
+          <div class="field">
+            <label>Primary Specialty <span class="req">*</span></label>
+            <select class="sel" id="specialty">
+              <option value="">Select specialty</option>
+              <option>Psychiatrist</option>
+              <option>Psychotherapist</option>
+              <option>Psychologist</option>
+              <option>Therapist</option>
+              <option>Counselor</option>
+              <option>Social Worker</option>
+              <option>Child & Adolescent Specialist</option>
+            </select>
+            <span class="err" id="specialtyErr">Please select a specialty</span>
+          </div>
+          <div class="field">
+            <label>Years of Experience <span class="req">*</span></label>
+            <input class="inp" id="experience" type="number" min="0" max="60" placeholder="e.g. 8" />
+            <span class="err" id="experienceErr">Please enter years of experience</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>License Number <span class="req">*</span></label>
+            <input class="inp" id="license" type="text" placeholder="e.g. LB-PSY-00423" />
+            <span class="err" id="licenseErr">Please enter your license number</span>
+          </div>
+          <div class="field">
+            <label>Licensing Body</label>
+            <input class="inp" id="licensingBody" type="text" placeholder="e.g. Lebanese Order of Physicians" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>University / Degree</label>
+            <input class="inp" id="university" type="text" placeholder="e.g. AUB — MSc Clinical Psychology" />
+          </div>
+          <div class="field">
+            <label>Graduation Year</label>
+            <input class="inp" id="gradYear" type="number" min="1960" max="2026" placeholder="e.g. 2015" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Areas of Focus</h3>
+          <p>Select all conditions and concerns you regularly treat</p>
+        </div>
+        <div class="pill-grid" id="focusGrid">
+          <div class="pill" data-val="Anxiety" onclick="togglePill(this,'focus')">Anxiety</div>
+          <div class="pill" data-val="Depression" onclick="togglePill(this,'focus')">Depression</div>
+          <div class="pill" data-val="Trauma & PTSD" onclick="togglePill(this,'focus')">Trauma & PTSD</div>
+          <div class="pill" data-val="Grief & Loss" onclick="togglePill(this,'focus')">Grief & Loss</div>
+          <div class="pill" data-val="Relationships" onclick="togglePill(this,'focus')">Relationships</div>
+          <div class="pill" data-val="Family Therapy" onclick="togglePill(this,'focus')">Family Therapy</div>
+          <div class="pill" data-val="OCD" onclick="togglePill(this,'focus')">OCD</div>
+          <div class="pill" data-val="Stress & Burnout" onclick="togglePill(this,'focus')">Stress & Burnout</div>
+          <div class="pill" data-val="Children & Teens" onclick="togglePill(this,'focus')">Children & Teens</div>
+          <div class="pill" data-val="Addiction" onclick="togglePill(this,'focus')">Addiction</div>
+          <div class="pill" data-val="Self-Esteem" onclick="togglePill(this,'focus')">Self-Esteem</div>
+          <div class="pill" data-val="Life Transitions" onclick="togglePill(this,'focus')">Life Transitions</div>
+          <div class="pill" data-val="Sleep Issues" onclick="togglePill(this,'focus')">Sleep Issues</div>
+          <div class="pill" data-val="ADHD" onclick="togglePill(this,'focus')">ADHD</div>
+          <div class="pill" data-val="Eating Disorders" onclick="togglePill(this,'focus')">Eating Disorders</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Therapeutic Approaches</h3>
+          <p>Methods and modalities you practice</p>
+        </div>
+        <div class="pill-grid" id="approachGrid">
+          <div class="pill" data-val="CBT" onclick="togglePill(this,'approach')">CBT</div>
+          <div class="pill" data-val="DBT" onclick="togglePill(this,'approach')">DBT</div>
+          <div class="pill" data-val="Psychodynamic" onclick="togglePill(this,'approach')">Psychodynamic</div>
+          <div class="pill" data-val="ACT" onclick="togglePill(this,'approach')">ACT</div>
+          <div class="pill" data-val="EMDR" onclick="togglePill(this,'approach')">EMDR</div>
+          <div class="pill" data-val="Mindfulness-Based" onclick="togglePill(this,'approach')">Mindfulness-Based</div>
+          <div class="pill" data-val="Somatic" onclick="togglePill(this,'approach')">Somatic</div>
+          <div class="pill" data-val="Narrative" onclick="togglePill(this,'approach')">Narrative</div>
+          <div class="pill" data-val="Solution-Focused" onclick="togglePill(this,'approach')">Solution-Focused</div>
+          <div class="pill" data-val="Integrative" onclick="togglePill(this,'approach')">Integrative</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>CV / Portfolio</h3>
+          <p>Upload your curriculum vitae and any additional certifications</p>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>CV / Resume <span class="req">*</span></label>
+            <div class="upload-zone" id="cvZone">
+              <input type="file" accept=".pdf,.doc,.docx" onchange="handleFile(this,'cv')" />
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              </div>
+              <p><strong>Upload CV</strong></p>
+              <p style="font-size:.8rem;margin-top:4px">PDF, DOC, DOCX — max 10MB</p>
+            </div>
+            <div id="cvPreview"></div>
+          </div>
+          <div class="field">
+            <label>Additional Certificates</label>
+            <div class="upload-zone" id="certZone">
+              <input type="file" accept=".pdf,image/*" multiple onchange="handleFile(this,'cert')" />
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </div>
+              <p><strong>Upload certificates</strong></p>
+              <p style="font-size:.8rem;margin-top:4px">PDF or images — multiple files OK</p>
+            </div>
+            <div id="certPreview"></div>
+          </div>
+        </div>
+
+        <div class="field-row solo">
+          <div class="field">
+            <label>LinkedIn / Personal Website</label>
+            <input class="inp" id="website" type="url" placeholder="https://..." />
+          </div>
+        </div>
+
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="prevStep(2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+        <span style="color:var(--muted);font-size:.88rem">Step 2 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(2)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 3: AVAILABILITY ─── -->
+    <div id="step3" style="display:none">
+      <div class="form-card-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Availability & Schedule</h2>
+          <p>Set your working days, hours, and session preferences</p>
+        </div>
+      </div>
+      <div class="form-body">
+
+        <div class="section-head">
+          <h3>Working Days</h3>
+          <p>Click to toggle each day on or off</p>
+        </div>
+        <div class="avail-grid" id="dayGrid">
+          <div class="day-card on" data-day="Mon" onclick="toggleDay(this)">
+            <div class="day-name">Mon</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card on" data-day="Tue" onclick="toggleDay(this)">
+            <div class="day-name">Tue</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card on" data-day="Wed" onclick="toggleDay(this)">
+            <div class="day-name">Wed</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card on" data-day="Thu" onclick="toggleDay(this)">
+            <div class="day-name">Thu</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card" data-day="Fri" onclick="toggleDay(this)">
+            <div class="day-name">Fri</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card" data-day="Sat" onclick="toggleDay(this)">
+            <div class="day-name">Sat</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+          <div class="day-card" data-day="Sun" onclick="toggleDay(this)">
+            <div class="day-name">Sun</div>
+            <div class="day-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          </div>
+        </div>
+
+        <div class="time-fields" style="margin-top:22px">
+          <div class="field">
+            <label class="time-label">Start Time</label>
+            <input class="inp" id="startTime" type="time" value="09:00" />
+          </div>
+          <div class="field">
+            <label class="time-label">End Time</label>
+            <input class="inp" id="endTime" type="time" value="18:00" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Session Duration</h3>
+          <p>How long is a standard session?</p>
+        </div>
+        <div class="pill-grid" id="durationGrid">
+          <div class="pill" data-val="30 min" onclick="togglePill(this,'duration')">30 min</div>
+          <div class="pill on" data-val="45 min" onclick="togglePill(this,'duration')">45 min</div>
+          <div class="pill" data-val="60 min" onclick="togglePill(this,'duration')">60 min</div>
+          <div class="pill" data-val="90 min" onclick="togglePill(this,'duration')">90 min</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Session Types Offered</h3>
+          <p>Choose which appointment formats you provide</p>
+        </div>
+        <div class="session-types">
+          <div class="type-card active" id="typeOnline" onclick="toggleType('Online')">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="type-name"> Online</span>
+              <div class="type-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            </div>
+            <span class="type-desc">Video call via WhatsApp, Zoom, or your preferred platform</span>
+          </div>
+          <div class="type-card active" id="typeOnsite" onclick="toggleType('On-site')">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="type-name"> On-site</span>
+              <div class="type-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            </div>
+            <span class="type-desc">In-person at your clinic or office</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Current Availability Status</h3>
+          <p>Are you currently accepting new patients?</p>
+        </div>
+        <div class="pill-grid" id="availStatus">
+          <div class="pill on" data-val="Available" onclick="togglePill(this,'status')">Available now</div>
+          <div class="pill" data-val="Limited" onclick="togglePill(this,'status')">Limited spots</div>
+          <div class="pill" data-val="Waitlist" onclick="togglePill(this,'status')">Waitlist only</div>
+          <div class="pill" data-val="Unavailable" onclick="togglePill(this,'status')">Not accepting</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Additional Notes</h3>
+          <p>Any schedule exceptions, holidays, or special notes</p>
+        </div>
+        <textarea class="area" id="scheduleNotes" placeholder="e.g. Unavailable August 1–15. Only evenings on Wednesdays."></textarea>
+
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="prevStep(3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+        <span style="color:var(--muted);font-size:.88rem">Step 3 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(3)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 4: PRICING ─── -->
+    <div id="step4" style="display:none">
+      <div class="form-card-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v2M12 16v2M8.5 9.5A3.5 3.5 0 0 1 12 8c1.93 0 3.5 1.1 3.5 3s-1.57 2.5-3.5 3-3.5 1.07-3.5 3A3.5 3.5 0 0 0 12 20c1.93 0 3.5-1.1 3.5-3"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Pricing & Payment</h2>
+          <p>Set your session rates and accepted payment methods</p>
+        </div>
+      </div>
+      <div class="form-body">
+
+        <div class="section-head">
+          <h3>Online Session Rate (USD)</h3>
+        </div>
+        <div class="slider-wrap">
+          <input class="price-slider" type="range" min="20" max="200" step="5" value="60" id="onlinePrice" oninput="updatePrice('online')" />
+          <div class="price-display">
+            <div>
+              <div class="price-val" id="onlinePriceVal">$60</div>
+              <div class="price-note">Per online session</div>
+            </div>
+            <input class="inp" id="onlinePriceInput" type="number" min="0" placeholder="Custom" style="width:110px;text-align:right" oninput="syncSlider('online')" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>On-site Session Rate (USD)</h3>
+        </div>
+        <div class="slider-wrap">
+          <input class="price-slider" type="range" min="20" max="200" step="5" value="80" id="onsitePrice" oninput="updatePrice('onsite')" />
+          <div class="price-display">
+            <div>
+              <div class="price-val" id="onsitePriceVal">$80</div>
+              <div class="price-note">Per on-site session</div>
+            </div>
+            <input class="inp" id="onsitePriceInput" type="number" min="0" placeholder="Custom" style="width:110px;text-align:right" oninput="syncSlider('onsite')" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Insurance Accepted?</h3>
+        </div>
+        <div class="pill-grid" id="insuranceGrid">
+          <div class="pill" data-val="Yes — some plans" onclick="togglePill(this,'insurance')">Yes — some plans</div>
+          <div class="pill" data-val="No — self-pay only" onclick="togglePill(this,'insurance')">No — self-pay only</div>
+          <div class="pill" data-val="Contact to confirm" onclick="togglePill(this,'insurance')">Contact to confirm</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Accepted Payment Methods</h3>
+          <p>Select all that apply — patients will see these on your listing</p>
+        </div>
+        <div class="pay-row">
+          <div class="pay-card active" id="payWish" onclick="togglePay('Wish')">
+            <div class="pay-logo">W</div>
+            <div>
+              <strong>Wish</strong>
+              <span>Online transfer</span>
+            </div>
+          </div>
+          <div class="pay-card active" id="payOMT" onclick="togglePay('OMT')">
+            <div class="pay-logo">O</div>
+            <div>
+              <strong>OMT</strong>
+              <span>Online money transfer</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Cancellation Policy</h3>
+        </div>
+        <div class="pill-grid" id="cancelPolicy">
+          <div class="pill on" data-val="24h notice required" onclick="togglePill(this,'cancel')">24h notice required</div>
+          <div class="pill" data-val="48h notice required" onclick="togglePill(this,'cancel')">48h notice required</div>
+          <div class="pill" data-val="Flexible" onclick="togglePill(this,'cancel')">Flexible</div>
+          <div class="pill" data-val="Non-refundable" onclick="togglePill(this,'cancel')">Non-refundable</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-head">
+          <h3>Pricing Notes</h3>
+          <p>Any additional pricing context, sliding scale, or packages</p>
+        </div>
+        <textarea class="area" id="pricingNotes" placeholder="e.g. Sliding scale available for students. Package of 5 sessions at a discount."></textarea>
+
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="prevStep(4)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+        <span style="color:var(--muted);font-size:.88rem">Step 4 of 5</span>
+        <button class="btn btn-primary" onclick="nextStep(4)">
+          Review Profile
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 5: REVIEW & SUBMIT ─── -->
+    <div id="step5" style="display:none">
+      <div class="form-card-head">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Review & Submit</h2>
+          <p>Check your information before sending for admin review</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Your profile will be submitted for admin review. You will receive an email confirmation once approved and listed on the main site.
+        </div>
+        <div id="reviewPanel"></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="prevStep(5)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back
+        </button>
+        <span style="color:var(--muted);font-size:.88rem">Step 5 of 5</span>
+        <button class="btn btn-primary" onclick="submitProfile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+          Submit for Review
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── SUCCESS ─── -->
+    <div id="stepSuccess" style="display:none">
+      <div class="success-screen">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        </div>
+        <h2>Profile Submitted!</h2>
+        <p>Thank you for joining Mental Health Lebanon. Your profile is now under review by our admin team.</p>
+        <div class="status-pill"><span></span>Pending admin approval</div>
+        <p style="font-size:.88rem;color:var(--muted);margin-bottom:20px">You'll receive a confirmation at <strong id="confirmEmail"></strong> once your listing goes live. This typically takes 1–2 business days.</p>
+        <button class="btn btn-ghost" onclick="goHome()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          Go to Main Site
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /form-card -->
+</div><!-- /wrap -->
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 5;
+const pillState = { lang:['Arabic'], focus:[], approach:[], duration:['45 min'], status:['Available'], insurance:[], cancel:['24h notice required'] };
+const sessionTypes = ['Online','On-site'];
+const payMethods = ['Wish','OMT'];
+
+// ── NAVIGATION ──
+function gotoStep(n){ if(n <= currentStep){ showStep(n); } }
+
+function nextStep(from){
+  if(!validateStep(from)) return;
+  showStep(from + 1);
+}
+function prevStep(from){ showStep(from - 1); }
+
+function showStep(n){
+  for(let i=1;i<=totalSteps;i++){
+    const el = document.getElementById('step'+i);
+    if(el) el.style.display = i===n ? 'block' : 'none';
+  }
+  currentStep = n;
+  updateStepper();
+  if(n === 5) buildReview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateStepper(){
+  const pct = (currentStep / totalSteps) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  for(let i=1;i<=totalSteps;i++){
+    const b = document.getElementById('sb'+i);
+    b.className = 'step-bubble' + (i===currentStep?' active':i<currentStep?' done':'');
+  }
+  for(let i=1;i<totalSteps;i++){
+    const c = document.getElementById('sc'+i);
+    c.className = 'step-connector' + (i<currentStep?' filled':'');
+  }
+}
+
+// ── VALIDATION ──
+function validateStep(n){
+  if(n===1){
+    const f = v('firstName'), l = v('lastName'), e = v('email'), p = v('phone'), c = document.getElementById('city').value, b = v('bio'), pw = v('password');
+    let ok = true;
+    if(!f){showErr('firstName',true);ok=false;}else showErr('firstName',false);
+    if(!l){showErr('lastName',true);ok=false;}else showErr('lastName',false);
+    if(!e||!e.includes('@')){showErr('email',true);ok=false;}else showErr('email',false);
+    if(!p){showErr('phone',true);ok=false;}else showErr('phone',false);
+    if(!c){showErr('city',true);ok=false;}else showErr('city',false);
+    if(!b){showErr('bio',true);ok=false;}else showErr('bio',false);
+    if(!pw || pw.length < 6){showErr('password',true);ok=false;}else showErr('password',false);
+    if(!ok) showToast('Please fill in all required fields.');
+    return ok;
+  }
+  if(n===2){
+    const sp = document.getElementById('specialty').value, ex = v('experience'), lic = v('license');
+    let ok = true;
+    if(!sp){showErr('specialty',true);ok=false;}else showErr('specialty',false);
+    if(!ex){showErr('experience',true);ok=false;}else showErr('experience',false);
+    if(!lic){showErr('license',true);ok=false;}else showErr('license',false);
+    if(!ok) showToast('Please fill in your professional credentials.');
+    return ok;
+  }
+  return true;
+}
+
+function v(id){ return document.getElementById(id).value.trim(); }
+function showErr(id, show){
+  const inp = document.getElementById(id);
+  const err = document.getElementById(id+'Err');
+  if(inp) inp.classList.toggle('invalid', show);
+  if(err) err.style.display = show ? 'block' : 'none';
+}
+
+// ── PILLS ──
+function togglePill(el, group){
+  const single = ['duration','status','insurance','cancel'];
+  if(single.includes(group)){
+    document.querySelectorAll(`#${getGridId(group)} .pill`).forEach(p=>p.classList.remove('on'));
+    el.classList.add('on');
+    pillState[group] = [el.dataset.val];
+  } else {
+    el.classList.toggle('on');
+    const val = el.dataset.val;
+    if(!pillState[group]) pillState[group]=[];
+    if(el.classList.contains('on')){ if(!pillState[group].includes(val)) pillState[group].push(val); }
+    else { pillState[group] = pillState[group].filter(v=>v!==val); }
+  }
+}
+
+function getGridId(group){
+  const map = {lang:'langGrid',focus:'focusGrid',approach:'approachGrid',duration:'durationGrid',status:'availStatus',insurance:'insuranceGrid',cancel:'cancelPolicy'};
+  return map[group]||'';
+}
+
+// ── DAYS ──
+function toggleDay(el){ el.classList.toggle('on'); }
+
+// ── SESSION TYPES ──
+function toggleType(type){
+  const card = type==='Online'?document.getElementById('typeOnline'):document.getElementById('typeOnsite');
+  card.classList.toggle('active');
+  if(sessionTypes.includes(type)) sessionTypes.splice(sessionTypes.indexOf(type),1);
+  else sessionTypes.push(type);
+}
+
+// ── PAYMENT ──
+function togglePay(method){
+  const card = method==='Wish'?document.getElementById('payWish'):document.getElementById('payOMT');
+  card.classList.toggle('active');
+  if(payMethods.includes(method)) payMethods.splice(payMethods.indexOf(method),1);
+  else payMethods.push(method);
+}
+
+// ── PRICING SLIDERS ──
+function updatePrice(type){
+  const slider = document.getElementById(type+'Price');
+  const val = slider.value;
+  document.getElementById(type+'PriceVal').textContent = '$'+val;
+  document.getElementById(type+'PriceInput').value = '';
+}
+function syncSlider(type){
+  const inp = document.getElementById(type+'PriceInput');
+  const val = parseInt(inp.value)||0;
+  document.getElementById(type+'PriceVal').textContent = '$'+val;
+  document.getElementById(type+'Price').value = Math.min(Math.max(val,20),200);
+}
+
+// ── FILE UPLOAD ──
+function handleFile(input, key){
+  const file = input.files[0];
+  if(!file) return;
+  const preview = document.getElementById(key+'Preview');
+  preview.innerHTML = `
+    <div class="file-preview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      ${file.name}
+      <button onclick="clearFile('${key}')" title="Remove">×</button>
+    </div>`;
+  showToast(`${file.name} uploaded ✓`);
+}
+function clearFile(key){
+  document.getElementById(key+'Preview').innerHTML='';
+}
+
+// ── REVIEW ──
+function buildReview(){
+  const days = [...document.querySelectorAll('.day-card.on')].map(d=>d.dataset.day).join(', ');
+  const onlineP = getSliderOrInput('online');
+  const onsiteP = getSliderOrInput('onsite');
+
+  const rows = [
+    ['Full Name', `${document.getElementById('titlePrefix').value} ${v('firstName')} ${v('lastName')}`],
+    ['Email', v('email')],
+    ['Phone', v('phone')],
+    ['City', document.getElementById('city').value],
+    ['Bio', v('bio')],
+    ['Languages', pillState.lang.join(', ')||'—'],
+    ['─','─'],
+    ['Specialty', document.getElementById('specialty').value],
+    ['Experience', v('experience') ? v('experience') + ' years' : '—'],
+    ['License', v('license')],
+    ['Areas of Focus', (pillState.focus||[]).join(', ')||'—'],
+    ['Approaches', (pillState.approach||[]).join(', ')||'—'],
+    ['─','─'],
+    ['Working Days', days||'—'],
+    ['Hours', `${document.getElementById('startTime').value} — ${document.getElementById('endTime').value}`],
+    ['Session Types', sessionTypes.join(', ')||'—'],
+    ['Duration', (pillState.duration||['—']).join('') ],
+    ['Availability', (pillState.status||['—']).join('')],
+    ['─','─'],
+    ['Online Price', '$'+onlineP],
+    ['On-site Price', '$'+onsiteP],
+    ['Payment', payMethods.join(', ')||'—'],
+    ['Insurance', (pillState.insurance||['—']).join('')],
+    ['Cancellation', (pillState.cancel||['—']).join('')]
+  ];
+
+  let html = '<div style="display:grid;gap:0">';
+  rows.forEach(([k,val])=>{
+    if(k==='─'){
+      html += `<div style="height:1px;background:rgba(16,32,58,.07);margin:10px 0"></div>`;
+      return;
+    }
+    html += `
+      <div style="display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid rgba(16,32,58,.05);font-size:.92rem">
+        <span style="color:var(--muted);font-weight:600;min-width:140px">${k}</span>
+        <span style="color:var(--text);font-weight:500;text-align:right">${val||'—'}</span>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('reviewPanel').innerHTML = html;
+}
+
+function getSliderOrInput(type){
+  const inp = document.getElementById(type+'PriceInput').value;
+  return inp || document.getElementById(type+'Price').value;
+}
+
+// ── FILES (held until submit) ──
+const filesState = { cv: null, photo: null, cert: [] };
+const _origHandleFile = handleFile;
+handleFile = function(input, key){
+  const file = input.files[0];
+  if(!file) return;
+  if(key === 'cert'){
+    filesState.cert = Array.from(input.files);
+  } else {
+    filesState[key] = file;
+  }
+  _origHandleFile(input, key);
+};
+
+// ── SUBMIT ──
+async function submitProfile(){
+  const email = v('email');
+  const firstName = v('firstName');
+  const lastName  = v('lastName');
+  if(!email || !firstName || !lastName){
+    showToast('Missing required personal info. Please go back and complete it.');
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('email', email);
+  fd.append('password', v('password'));
+  fd.append('firstName', firstName);
+  fd.append('lastName', lastName);
+  fd.append('titlePrefix', document.getElementById('titlePrefix').value);
+  fd.append('gender', document.getElementById('gender').value);
+  fd.append('phone', v('phone'));
+  fd.append('city', document.getElementById('city').value);
+  fd.append('address', v('address'));
+  fd.append('bio', v('bio'));
+  fd.append('languages', JSON.stringify(pillState.lang || []));
+  fd.append('specialty', document.getElementById('specialty').value);
+  fd.append('experience', v('experience'));
+  fd.append('license', v('license'));
+  fd.append('licensingBody', v('licensingBody'));
+  fd.append('university', v('university'));
+  fd.append('gradYear', v('gradYear'));
+  fd.append('focus', JSON.stringify(pillState.focus || []));
+  fd.append('approaches', JSON.stringify(pillState.approach || []));
+  fd.append('sessionTypes', JSON.stringify(sessionTypes));
+  const days = [...document.querySelectorAll('.day-card.on')].map(d=>d.dataset.day);
+  fd.append('workingDays', JSON.stringify(days));
+  fd.append('startTime', document.getElementById('startTime').value);
+  fd.append('endTime', document.getElementById('endTime').value);
+  fd.append('duration', (pillState.duration||[''])[0]);
+  fd.append('statusAvailability', (pillState.status||[''])[0]);
+  fd.append('onlinePrice', getSliderOrInput('online'));
+  fd.append('onsitePrice', getSliderOrInput('onsite'));
+  fd.append('payMethods', JSON.stringify(payMethods));
+  fd.append('insurance', (pillState.insurance||[''])[0]);
+  fd.append('cancellation', (pillState.cancel||[''])[0]);
+  fd.append('scheduleNotes', v('scheduleNotes'));
+  fd.append('pricingNotes', v('pricingNotes'));
+  fd.append('website', v('website'));
+
+  if(filesState.cv) fd.append('cv', filesState.cv);
+  if(filesState.photo) fd.append('photo', filesState.photo);
+  (filesState.cert || []).forEach(f => fd.append('certificates', f));
+
+  try {
+    const res = await fetch('/api/therapists/signup', { method: 'POST', body: fd });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      if(data.error === 'email_already_applied'){
+        showToast('You have already submitted an application with this email.');
+      } else if(data.error === 'password_too_short'){
+        showToast('Password must be at least 6 characters.');
+      } else {
+        showToast('Could not submit application. Please try again.');
+      }
+      return;
+    }
+
+    // Success
+    for(let i=1;i<=totalSteps;i++){
+      const el = document.getElementById('step'+i);
+      if(el) el.style.display='none';
+    }
+    document.getElementById('stepSuccess').style.display='block';
+    document.getElementById('confirmEmail').textContent = email;
+    document.getElementById('progressBar').style.width='100%';
+    for(let i=1;i<=totalSteps;i++){
+      const b = document.getElementById('sb'+i);
+      if(b) b.className = 'step-bubble done';
+    }
+    for(let i=1;i<totalSteps;i++){
+      const c = document.getElementById('sc'+i);
+      if(c) c.className = 'step-connector filled';
+    }
+  } catch {
+    showToast('Network error. Please try again.');
+  }
+}
+
+// ── TOAST ──
+function showToast(msg){
+  document.getElementById('toastMsg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+function goHome(){ window.location.href='index.html'; }
+
+// Init
+showStep(1);
+</script>
+</body>
+</html>

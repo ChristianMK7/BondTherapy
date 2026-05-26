@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bond Therapy — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f3f6fc;
+  --card: #ffffff;
+  --text: #0f1f3a;
+  --muted: #67748d;
+  --primary: #2b6cff;
+  --primary-2: #5a8dff;
+  --accent: #1e40af;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --amber: #d97706;
+  --amber-bg: #fef3c7;
+  --line: rgba(15,31,58,.08);
+  --radius: 14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#eef4ff,#dde8ff)}
+.login-card{background:#fff;border-radius:24px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(22,52,120,.12);border:1px solid var(--line)}
+.login-card h1{font-family:'Playfair Display',serif;font-size:1.7rem;margin-bottom:6px}
+.login-card .sub{color:var(--muted);font-size:.92rem;margin-bottom:24px}
+.login-card label{display:block;font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:14px}
+.login-card input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.95rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.login-card input:focus{border-color:rgba(43,108,255,.4);box-shadow:0 0 0 4px rgba(43,108,255,.08)}
+.login-card .err{color:var(--red);font-size:.85rem;margin-top:10px;display:none}
+.login-card button{margin-top:20px;width:100%;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border:none;border-radius:12px;padding:13px;font-weight:700;cursor:pointer;font-size:.95rem;box-shadow:0 8px 22px rgba(43,108,255,.22)}
+.login-card button:hover{transform:translateY(-1px)}
+
+/* APP */
+.app{display:none;min-height:100vh}
+.app.show{display:grid;grid-template-columns:240px 1fr}
+.sidebar{background:#16306b;color:#eaf2ff;padding:24px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{padding:8px 12px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.brand h2{font-family:'Playfair Display',serif;font-size:1.25rem;color:#fff;line-height:1.1}
+.brand p{font-family:'DM Mono',monospace;font-size:.66rem;letter-spacing:.14em;color:rgba(185,208,255,.6);text-transform:uppercase;margin-top:4px}
+.nav-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border-radius:10px;color:rgba(234,242,255,.78);font-weight:500;font-size:.93rem;cursor:pointer;transition:background .15s,color .15s;border:none;background:none;text-align:left;width:100%}
+.nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-btn.active{background:rgba(43,108,255,.22);color:#fff;font-weight:600}
+.nav-badge{background:#dc2626;color:#fff;border-radius:999px;font-size:.7rem;font-weight:700;padding:2px 8px;min-width:22px;text-align:center}
+.nav-bottom{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.logout-btn{color:rgba(234,242,255,.6);font-size:.86rem;padding:10px 13px;cursor:pointer;border-radius:10px;background:none;border:none;width:100%;text-align:left}
+.logout-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+
+.main{padding:30px 36px;max-width:1280px;width:100%}
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.page-head h1{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;letter-spacing:-.02em}
+.page-head p{color:var(--muted);font-size:.92rem;margin-top:2px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 8px rgba(22,52,120,.04)}
+.stat .label{font-family:'DM Mono',monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.stat .num{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;color:var(--text);line-height:1}
+.stat .sub{font-size:.82rem;color:var(--muted);margin-top:4px}
+
+/* Cards / Tables */
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(22,52,120,.04)}
+.panel-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.panel-head h3{font-size:1.05rem;font-weight:700}
+.tabs{display:flex;gap:4px;background:rgba(43,108,255,.06);padding:4px;border-radius:10px}
+.tab{padding:6px 14px;border:none;background:none;color:var(--muted);font-weight:600;font-size:.85rem;border-radius:8px;cursor:pointer}
+.tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(22,52,120,.08)}
+.panel-body{padding:0}
+.list-item{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.list-item:last-child{border-bottom:none}
+.list-item:hover{background:rgba(43,108,255,.025)}
+.list-item .info{flex:1;min-width:0}
+.list-item .info strong{display:block;font-weight:700;margin-bottom:4px}
+.list-item .info .meta{font-size:.86rem;color:var(--muted)}
+.list-item .info .meta span+span::before{content:'•';margin:0 6px;color:var(--line)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.btn{border:none;cursor:pointer;border-radius:9px;padding:8px 14px;font-weight:600;font-size:.85rem;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(43,108,255,.25)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#b91c1c}
+.btn-outline{background:#fff;border:1px solid var(--line);color:var(--text)}
+.btn-outline:hover{border-color:rgba(43,108,255,.3);color:var(--primary)}
+.btn-ghost{background:rgba(43,108,255,.07);color:var(--primary)}
+.btn-ghost:hover{background:rgba(43,108,255,.13)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-family:'DM Mono',monospace}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-amber{background:var(--amber-bg);color:var(--amber)}
+.pill-blue{background:rgba(43,108,255,.1);color:var(--primary)}
+.pill-gray{background:rgba(15,31,58,.06);color:var(--muted)}
+
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.empty h3{font-family:'Playfair Display',serif;color:var(--text);font-size:1.3rem;margin-bottom:6px}
+
+.page-section{display:none}
+.page-section.active{display:block}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(8,16,34,.55);backdrop-filter:blur(8px);display:none;z-index:50;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;width:min(720px,100%);max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.2)}
+.modal h2{font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:6px}
+.modal .sub{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+.modal-row{padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:18px;font-size:.91rem}
+.modal-row .k{color:var(--muted);font-weight:600;min-width:130px;font-family:'DM Mono',monospace;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+.modal-row .v{color:var(--text);text-align:right;flex:1;word-break:break-word}
+.modal-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;justify-content:flex-end}
+
+@media (max-width:820px){
+  .app.show{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:4px}
+  .brand{display:none}
+  .nav-bottom{margin-top:0;border:none;padding:0}
+  .main{padding:18px}
+  .list-item{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h1>Admin Login</h1>
+    <p class="sub">Bond Therapy management dashboard</p>
+    <label>Username</label>
+    <input type="text" id="loginUser" autocomplete="username" />
+    <label>Password</label>
+    <input type="password" id="loginPass" autocomplete="current-password" />
+    <div class="err" id="loginErr">Invalid credentials</div>
+    <button onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h2>Bond Therapy</h2>
+      <p>Admin Console</p>
+    </div>
+    <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-btn" data-page="bookings" onclick="showPage('bookings')">
+      <span>Bookings</span><span class="nav-badge" id="badgeBookings" style="display:none">0</span>
+    </button>
+    <button class="nav-btn" data-page="therapists" onclick="showPage('therapists')">
+      <span>Therapists</span><span class="nav-badge" id="badgeTherapists" style="display:none">0</span>
+    </button>
+    <button class="nav-btn" data-page="messages" onclick="showPage('messages')">
+      <span>Messages</span><span class="nav-badge" id="badgeMessages" style="display:none">0</span>
+    </button>
+    <button class="nav-btn" data-page="clients" onclick="showPage('clients')">Clients</button>
+    <button class="nav-btn" data-page="blog" onclick="showPage('blog')">Blog</button>
+    <button class="nav-btn" data-page="resets" onclick="showPage('resets')">
+      <span>Password resets</span><span class="nav-badge" id="badgeResets" style="display:none">0</span>
+    </button>
+    <div class="nav-bottom">
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="page-section active" id="page-dashboard">
+      <div class="page-head">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Overview of your platform activity</p>
+        </div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="panel">
+        <div class="panel-head"><h3>Recent activity</h3></div>
+        <div class="panel-body" id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- BOOKINGS -->
+    <section class="page-section" id="page-bookings">
+      <div class="page-head">
+        <div><h1>Bookings</h1><p>All appointment bookings made by clients</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>All bookings</h3></div>
+        <div class="panel-body" id="bookingsList"></div>
+      </div>
+    </section>
+
+    <!-- THERAPISTS -->
+    <section class="page-section" id="page-therapists">
+      <div class="page-head">
+        <div><h1>Therapist applications</h1><p>Review, approve, or decline therapist signups</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Applications</h3>
+          <div class="tabs">
+            <button class="tab active" data-filter="pending" onclick="setTherapistFilter('pending')">Pending</button>
+            <button class="tab" data-filter="approved" onclick="setTherapistFilter('approved')">Approved</button>
+            <button class="tab" data-filter="declined" onclick="setTherapistFilter('declined')">Declined</button>
+            <button class="tab" data-filter="" onclick="setTherapistFilter('')">All</button>
+          </div>
+        </div>
+        <div class="panel-body" id="therapistsList"></div>
+      </div>
+    </section>
+
+    <!-- MESSAGES -->
+    <section class="page-section" id="page-messages">
+      <div class="page-head">
+        <div><h1>Messages</h1><p>Contact form submissions</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>All messages</h3></div>
+        <div class="panel-body" id="messagesList"></div>
+      </div>
+    </section>
+
+    <!-- BLOG -->
+    <section class="page-section" id="page-blog">
+      <div class="page-head">
+        <div><h1>Blog posts</h1><p>Write articles for the public blog. Drafts are saved but not visible to visitors.</p></div>
+        <button class="btn btn-primary" onclick="openBlogEditor()">+ New post</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>All posts</h3></div>
+        <div class="panel-body" id="blogList"></div>
+      </div>
+    </section>
+
+    <!-- PASSWORD RESETS -->
+    <section class="page-section" id="page-resets">
+      <div class="page-head">
+        <div><h1>Password reset requests</h1><p>When a client clicks "Forgot password", a request lands here. Approve it to generate a one-time link you can share with them.</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Pending requests</h3></div>
+        <div class="panel-body" id="resetsList"></div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section class="page-section" id="page-clients">
+      <div class="page-head">
+        <div><h1>Clients</h1><p>Registered client accounts</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>All clients</h3></div>
+        <div class="panel-body" id="clientsList"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="detailModalBody"></div>
+</div>
+
+<script>
+let currentTherapistFilter = 'pending';
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts
+  });
+  if (res.status === 401) {
+    showLogin();
+    throw new Error('auth');
+  }
+  return res.json();
+}
+
+async function init() {
+  const me = await fetch('/api/admin/me', { credentials: 'include' }).then(r => r.json());
+  if (me.loggedIn) showApp(); else showLogin();
+}
+
+function showLogin() {
+  document.getElementById('loginWrap').style.display = 'grid';
+  document.getElementById('app').classList.remove('show');
+}
+
+function showApp() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  refresh();
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.style.display = 'none';
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password })
+    });
+    if (res.ok) showApp();
+    else err.style.display = 'block';
+  } catch {
+    err.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+  showLogin();
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === p));
+  if (p === 'dashboard') loadDashboard();
+  if (p === 'bookings') loadBookings();
+  if (p === 'therapists') loadTherapists();
+  if (p === 'messages') loadMessages();
+  if (p === 'clients') loadClients();
+  if (p === 'resets') loadResets();
+  if (p === 'blog') loadBlogAdmin();
+}
+
+let _blogPosts = [];
+async function loadBlogAdmin() {
+  _blogPosts = await api('/api/admin/blog');
+  const list = document.getElementById('blogList');
+  if (!_blogPosts.length) {
+    list.innerHTML = `<div class="empty"><h3>No posts yet</h3><p>Click "New post" to write your first article.</p></div>`;
+    return;
+  }
+  list.innerHTML = _blogPosts.map(p => `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml(p.title)} ${p.published ? '<span class="pill pill-green">Published</span>' : '<span class="pill pill-gray">Draft</span>'}</strong>
+        <div class="meta">
+          <span>${p.author ? 'By ' + escapeHtml(p.author) : 'Unsigned'}</span>
+          <span>${fmtDate(p.created_at)}</span>
+          ${p.published ? `<span><a href="/blog/${escapeAttr(p.slug)}" target="_blank" style="color:var(--primary)">/blog/${escapeHtml(p.slug)}</a></span>` : ''}
+        </div>
+        ${p.excerpt ? `<div style="color:var(--muted);margin-top:6px;font-size:.88rem">${escapeHtml(p.excerpt)}</div>` : ''}
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="openBlogEditor(${p.id})">Edit</button>
+        <button class="btn btn-red" onclick="deleteBlog(${p.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openBlogEditor(id) {
+  const p = id ? _blogPosts.find(x => x.id === id) : { title:'', excerpt:'', content:'', author:'', published:0 };
+  if (!p) return;
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2>${id ? 'Edit post' : 'New post'}</h2>
+    <p class="sub">${id ? 'Update an existing post' : 'Write a new article'}</p>
+    <label class="modal-label" style="margin-top:18px">Title</label>
+    <input class="field-input" id="blogTitle" type="text" value="${escapeAttr(p.title)}" placeholder="An honest article title" style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px">
+    <label class="modal-label">Author (optional)</label>
+    <input class="field-input" id="blogAuthor" type="text" value="${escapeAttr(p.author||'')}" placeholder="Your name" style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px">
+    <label class="modal-label">Excerpt (optional, shown in the list)</label>
+    <textarea id="blogExcerpt" rows="2" style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px;resize:vertical;font-family:inherit">${escapeHtml(p.excerpt||'')}</textarea>
+    <label class="modal-label">Content</label>
+    <textarea id="blogContent" rows="12" placeholder="Write your article here. Line breaks are preserved." style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:14px;resize:vertical;font-family:inherit;line-height:1.7">${escapeHtml(p.content||'')}</textarea>
+    <label style="display:flex;gap:8px;align-items:center;font-size:.92rem;cursor:pointer">
+      <input type="checkbox" id="blogPublished" ${p.published?'checked':''} style="width:18px;height:18px"> Publish (visible to visitors)
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBlog(${id || 'null'})">${id ? 'Save changes' : 'Create post'}</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+async function saveBlog(id) {
+  const body = {
+    title: document.getElementById('blogTitle').value.trim(),
+    author: document.getElementById('blogAuthor').value.trim(),
+    excerpt: document.getElementById('blogExcerpt').value.trim(),
+    content: document.getElementById('blogContent').value.trim(),
+    published: document.getElementById('blogPublished').checked ? 1 : 0
+  };
+  if (!body.title || !body.content) { alert('Title and content are required.'); return; }
+  const url = id ? `/api/admin/blog/${id}` : '/api/admin/blog';
+  const method = id ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) { closeModal(); loadBlogAdmin(); }
+  else alert('Could not save.');
+}
+
+async function deleteBlog(id) {
+  if (!confirm('Delete this post?')) return;
+  await api(`/api/admin/blog/${id}`, { method:'DELETE' });
+  loadBlogAdmin();
+}
+
+async function loadResets() {
+  const rows = await api('/api/admin/password-resets');
+  const list = document.getElementById('resetsList');
+  const badge = document.getElementById('badgeResets');
+  if (rows.length) { badge.style.display = 'inline-block'; badge.textContent = rows.length; }
+  else { badge.style.display = 'none'; }
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><h3>No pending requests</h3><p>When clients click "Forgot password" they'll appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = rows.map(r => `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml(r.client_first_name||'')} ${escapeHtml(r.client_last_name||'')} ${r.approved ? '<span class="pill pill-green">Approved</span>' : '<span class="pill pill-amber">Pending</span>'}</strong>
+        <div class="meta">
+          <span>${escapeHtml(r.client_email||'')}</span>
+          <span>Requested ${fmtDate(r.created_at)}</span>
+          <span>Expires ${fmtDate(r.expires_at)}</span>
+        </div>
+      </div>
+      <div class="actions" style="flex-direction:column;align-items:flex-end">
+        ${!r.approved ? `<button class="btn btn-green" onclick="approveReset(${r.id}, '${escapeAttr(r.client_email||'')}')">Approve & get link</button>` : ''}
+        <button class="btn btn-red" onclick="dismissReset(${r.id})">Dismiss</button>
+      </div>
+    </div>
+  `).join('');
+}
+async function approveReset(id, email) {
+  const res = await api(`/api/admin/password-resets/${id}/approve`, { method:'POST' });
+  if (res.ok && res.link) {
+    prompt(`Reset link for ${email}\n\nSend this link to the client (WhatsApp / email / etc). They can click it once to set a new password. It expires in 24 hours.`, res.link);
+    refresh(); loadResets();
+  }
+}
+async function dismissReset(id) {
+  if (!confirm('Dismiss this request?')) return;
+  await api(`/api/admin/password-resets/${id}/dismiss`, { method:'POST' });
+  refresh(); loadResets();
+}
+
+async function refresh() {
+  const stats = await api('/api/admin/stats');
+  renderStats(stats);
+  updateBadges(stats);
+  loadDashboard(stats);
+}
+
+function updateBadges(s) {
+  const setBadge = (id, n) => {
+    const el = document.getElementById(id);
+    if (n > 0) { el.style.display = 'inline-block'; el.textContent = n; }
+    else el.style.display = 'none';
+  };
+  setBadge('badgeMessages', s.unreadMessages);
+  setBadge('badgeTherapists', s.pendingTherapists);
+  setBadge('badgeResets', s.pendingResets || 0);
+}
+
+function renderStats(s) {
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat"><div class="label">Total bookings</div><div class="num">${s.bookings}</div><div class="sub">All-time appointments</div></div>
+    <div class="stat"><div class="label">Pending therapists</div><div class="num">${s.pendingTherapists}</div><div class="sub">${s.approvedTherapists} approved</div></div>
+    <div class="stat"><div class="label">Unread messages</div><div class="num">${s.unreadMessages}</div><div class="sub">${s.messages} total</div></div>
+    <div class="stat"><div class="label">Registered clients</div><div class="num">${s.clients}</div><div class="sub">Accounts created</div></div>
+  `;
+}
+
+async function loadDashboard(stats) {
+  if (stats) renderStats(stats); else renderStats(await api('/api/admin/stats'));
+  const [bookings, messages, therapists] = await Promise.all([
+    api('/api/admin/bookings'),
+    api('/api/admin/messages'),
+    api('/api/admin/therapists?status=pending')
+  ]);
+  const recent = [];
+  bookings.slice(0, 4).forEach(b => recent.push({
+    type: 'booking', date: b.created_at,
+    html: `<strong>${escapeHtml(b.client_first_name || b.client_email)}</strong> booked an appointment <span class="pill pill-blue">${escapeHtml(b.therapist_name)}</span>
+           <div class="meta">${escapeHtml(b.time_slot)} • ${escapeHtml(b.session_type)} • $${b.total}</div>`
+  }));
+  therapists.slice(0, 3).forEach(t => recent.push({
+    type: 'therapist', date: t.submitted_at,
+    html: `<strong>${escapeHtml((t.title_prefix||'') + ' ' + t.first_name + ' ' + t.last_name)}</strong> applied as therapist <span class="pill pill-amber">Pending</span>
+           <div class="meta">${escapeHtml(t.specialty || '')} • ${escapeHtml(t.city || '')}</div>`
+  }));
+  messages.slice(0, 3).forEach(m => recent.push({
+    type: 'message', date: m.created_at,
+    html: `<strong>${escapeHtml(m.first_name + ' ' + (m.last_name||''))}</strong> sent a message
+           <div class="meta">${escapeHtml((m.message||'').slice(0,80))}${(m.message||'').length>80?'...':''}</div>`
+  }));
+  recent.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const list = document.getElementById('recentList');
+  if (!recent.length) {
+    list.innerHTML = `<div class="empty"><h3>No activity yet</h3><p>Bookings, messages and therapist signups will appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = recent.map(r => `
+    <div class="list-item">
+      <div class="info">${r.html}</div>
+      <div style="color:var(--muted);font-size:.8rem;white-space:nowrap">${fmtDate(r.date)}</div>
+    </div>
+  `).join('');
+}
+
+async function loadBookings() {
+  const rows = await api('/api/admin/bookings');
+  const list = document.getElementById('bookingsList');
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><h3>No bookings yet</h3><p>When a client books an appointment, it shows up here.</p></div>`;
+    return;
+  }
+  list.innerHTML = rows.map(b => {
+    const pay = b.payment_status || 'unpaid';
+    const payClass = pay === 'confirmed' ? 'green' : pay === 'declined' ? 'red' : pay === 'pending_review' ? 'blue' : 'gray';
+    const showPayActions = pay === 'pending_review';
+    return `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml(b.client_first_name || '')} ${escapeHtml(b.client_last_name || '')} <span style="color:var(--muted);font-weight:500">(${escapeHtml(b.client_email||'')})</span></strong>
+        booked with <strong>${escapeHtml(b.therapist_name)}</strong>
+        <div class="meta">
+          <span>${escapeHtml(b.appointment_date || '')} ${escapeHtml(b.time_slot)}</span>
+          <span>${escapeHtml(b.session_type)}</span>
+          <span>${escapeHtml(b.therapist_city||'')}</span>
+          <span>$${b.total}</span>
+          <span>Phone: ${escapeHtml(b.client_phone||'—')}</span>
+        </div>
+        ${b.payment_ref ? `<div class="meta" style="margin-top:6px"><span class="pill pill-${payClass}">${pay.replace('_',' ')}</span> <span>via <strong>${escapeHtml((b.payment_method||'').toUpperCase())}</strong> · ref: <strong>${escapeHtml(b.payment_ref)}</strong></span></div>` : `<div class="meta" style="margin-top:6px"><span class="pill pill-${payClass}">${pay.replace('_',' ')}</span></div>`}
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <div style="color:var(--muted);font-size:.8rem">${fmtDate(b.created_at)}</div>
+        <span class="pill pill-${b.status==='confirmed'?'green':b.status==='cancelled'?'red':'amber'}">${b.status}</span>
+        ${showPayActions ? `
+          <button class="btn btn-green" onclick="confirmPayment(${b.id})">Confirm payment</button>
+          <button class="btn btn-red"   onclick="declinePayment(${b.id})">Decline payment</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+async function confirmPayment(id){
+  if(!confirm('Mark this payment as confirmed and confirm the booking?')) return;
+  await api(`/api/admin/bookings/${id}/payment/confirm`, { method:'POST' });
+  loadBookings(); refresh();
+}
+async function declinePayment(id){
+  if(!confirm('Decline this payment? The client will be asked to resubmit.')) return;
+  await api(`/api/admin/bookings/${id}/payment/decline`, { method:'POST' });
+  loadBookings(); refresh();
+}
+
+let _therapistsCache = [];
+function setTherapistFilter(f) {
+  currentTherapistFilter = f;
+  document.querySelectorAll('#page-therapists .tab').forEach(t => t.classList.toggle('active', t.dataset.filter === f));
+  loadTherapists();
+}
+
+async function loadTherapists() {
+  const url = currentTherapistFilter ? `/api/admin/therapists?status=${currentTherapistFilter}` : `/api/admin/therapists`;
+  _therapistsCache = await api(url);
+  const list = document.getElementById('therapistsList');
+  if (!_therapistsCache.length) {
+    list.innerHTML = `<div class="empty"><h3>No applications</h3><p>Therapist signups will appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = _therapistsCache.map(t => {
+    const pillClass = t.status === 'approved' ? 'green' : t.status === 'declined' ? 'red' : 'amber';
+    return `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml((t.title_prefix||'') + ' ' + t.first_name + ' ' + t.last_name)} <span class="pill pill-${pillClass}">${t.status}</span></strong>
+        <div class="meta">
+          <span>${escapeHtml(t.specialty || '—')}</span>
+          <span>${escapeHtml(t.city || '—')}</span>
+          <span>${escapeHtml(t.experience || '0')} yrs exp</span>
+          <span>${escapeHtml(t.email)}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="viewTherapist(${t.id})">View details</button>
+        ${t.status !== 'approved' ? `<button class="btn btn-green" onclick="setTherapistStatus(${t.id},'approve')">Approve</button>` : ''}
+        ${t.status !== 'declined' ? `<button class="btn btn-red" onclick="setTherapistStatus(${t.id},'decline')">Decline</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewTherapist(id) {
+  const t = _therapistsCache.find(x => x.id === id);
+  if (!t) return;
+  const row = (k, v) => v ? `<div class="modal-row"><div class="k">${k}</div><div class="v">${v}</div></div>` : '';
+  const fileLink = (label, fn) => fn ? `<a class="btn btn-ghost" href="/api/admin/file/${encodeURIComponent(fn)}" target="_blank" rel="noopener">${label} ↗</a>` : '';
+  const certLinks = (t.cert_filenames || []).map((f, i) => fileLink(`Certificate ${i+1}`, f)).join(' ');
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2>${escapeHtml((t.title_prefix||'') + ' ' + t.first_name + ' ' + t.last_name)}</h2>
+    <p class="sub">${escapeHtml(t.specialty || '')} • ${escapeHtml(t.city || '')} • ${t.experience || 0} years experience</p>
+
+    ${row('Status', `<span class="pill pill-${t.status==='approved'?'green':t.status==='declined'?'red':'amber'}">${t.status}</span>`)}
+    ${row('Email', escapeHtml(t.email))}
+    ${row('Phone', escapeHtml(t.phone))}
+    ${row('Gender', escapeHtml(t.gender))}
+    ${row('Address', escapeHtml(t.address))}
+    ${row('Bio', escapeHtml(t.bio))}
+    ${row('Languages', (t.languages||[]).map(escapeHtml).join(', '))}
+    ${row('License', escapeHtml(t.license))}
+    ${row('Licensing body', escapeHtml(t.licensing_body))}
+    ${row('University', escapeHtml(t.university))}
+    ${row('Graduation year', escapeHtml(t.grad_year))}
+    ${row('Focus areas', (t.focus||[]).map(escapeHtml).join(', '))}
+    ${row('Approaches', (t.approaches||[]).map(escapeHtml).join(', '))}
+    ${row('Session types', (t.session_types||[]).map(escapeHtml).join(', '))}
+    ${row('Working days', (t.working_days||[]).map(escapeHtml).join(', '))}
+    ${row('Hours', `${escapeHtml(t.start_time||'')} — ${escapeHtml(t.end_time||'')}`)}
+    ${row('Session duration', escapeHtml(t.duration))}
+    ${row('Availability', escapeHtml(t.status_availability))}
+    ${row('Online price', t.online_price ? '$' + escapeHtml(t.online_price) : '')}
+    ${row('On-site price', t.onsite_price ? '$' + escapeHtml(t.onsite_price) : '')}
+    ${row('Payment methods', (t.pay_methods||[]).map(escapeHtml).join(', '))}
+    ${row('Insurance', escapeHtml(t.insurance))}
+    ${row('Cancellation', escapeHtml(t.cancellation))}
+    ${row('Schedule notes', escapeHtml(t.schedule_notes))}
+    ${row('Pricing notes', escapeHtml(t.pricing_notes))}
+    ${row('Website', t.website ? `<a href="${escapeAttr(t.website)}" target="_blank" rel="noopener">${escapeHtml(t.website)}</a>` : '')}
+    ${row('Submitted', fmtDate(t.submitted_at))}
+
+    <div class="modal-row" style="border:none;padding-top:18px">
+      <div class="k">Documents</div>
+      <div class="v" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end">
+        ${fileLink('CV', t.cv_filename)}
+        ${fileLink('Photo', t.photo_filename)}
+        ${certLinks || (t.cv_filename ? '' : '<span style="color:var(--muted)">No files uploaded</span>')}
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      ${t.status !== 'approved' ? `<button class="btn btn-green" onclick="setTherapistStatus(${t.id},'approve');closeModal()">Approve</button>` : ''}
+      ${t.status !== 'declined' ? `<button class="btn btn-red" onclick="setTherapistStatus(${t.id},'decline');closeModal()">Decline</button>` : ''}
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+
+async function setTherapistStatus(id, action) {
+  await api(`/api/admin/therapists/${id}/${action}`, { method: 'POST' });
+  refresh();
+  loadTherapists();
+}
+
+async function loadMessages() {
+  const rows = await api('/api/admin/messages');
+  const list = document.getElementById('messagesList');
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><h3>No messages yet</h3><p>Contact form submissions will appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = rows.map(m => `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml(m.first_name)} ${escapeHtml(m.last_name||'')} ${m.is_read ? '' : '<span class="pill pill-blue">New</span>'}</strong>
+        <div class="meta">
+          <span>${escapeHtml(m.email)}</span>
+          ${m.phone ? `<span>${escapeHtml(m.phone)}</span>` : ''}
+        </div>
+        <div style="margin-top:8px;color:var(--text);white-space:pre-wrap">${escapeHtml(m.message)}</div>
+      </div>
+      <div class="actions" style="flex-direction:column;align-items:flex-end">
+        <div style="color:var(--muted);font-size:.8rem">${fmtDate(m.created_at)}</div>
+        ${!m.is_read ? `<button class="btn btn-ghost" onclick="markRead(${m.id})">Mark read</button>` : ''}
+        <a class="btn btn-outline" href="mailto:${escapeAttr(m.email)}?subject=Re:%20Your%20message%20to%20Bond%20Therapy" target="_blank" rel="noopener">Reply</a>
+        <button class="btn btn-red" onclick="deleteMessage(${m.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function markRead(id) {
+  await api(`/api/admin/messages/${id}/read`, { method: 'POST' });
+  refresh();
+  loadMessages();
+}
+
+async function deleteMessage(id) {
+  if (!confirm('Delete this message?')) return;
+  await api(`/api/admin/messages/${id}`, { method: 'DELETE' });
+  refresh();
+  loadMessages();
+}
+
+async function loadClients() {
+  const rows = await api('/api/admin/clients');
+  const list = document.getElementById('clientsList');
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><h3>No clients yet</h3><p>Registered users will appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = rows.map(c => `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escapeHtml(c.first_name||'')} ${escapeHtml(c.last_name||'')}</strong>
+        <div class="meta">
+          <span>${escapeHtml(c.email)}</span>
+          ${c.phone ? `<span>${escapeHtml(c.phone)}</span>` : ''}
+        </div>
+      </div>
+      <div class="actions" style="align-items:flex-end;flex-direction:column">
+        <div style="color:var(--muted);font-size:.8rem">Joined ${fmtDate(c.created_at)}</div>
+        <button class="btn btn-ghost" onclick="resetPassword(${c.id}, '${escapeAttr(c.email)}')">Reset password</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function resetPassword(id, email){
+  if(!confirm(`Reset the password for ${email}? They'll need to use the new temporary password to sign in.`)) return;
+  const res = await api(`/api/admin/clients/${id}/reset-password`, { method:'POST' });
+  if(res.ok && res.tempPassword){
+    prompt(`Temporary password for ${email}\n\nCopy this and share it securely with the user. They can change it after signing in.`, res.tempPassword);
+  }
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+  if (isNaN(d)) return s;
+  return d.toLocaleString();
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+init();
+</script>
+</body>
+</html>

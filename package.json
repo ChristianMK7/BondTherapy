@@ -1,0 +1,19 @@
+{
+  "name": "bond-therapy",
+  "version": "1.0.0",
+  "description": "Bond Therapy directory backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "compression": "^1.8.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "multer": "^2.1.1"
+  }
+}
