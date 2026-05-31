@@ -689,7 +689,7 @@ async function loadMessages() {
       <div class="actions" style="flex-direction:column;align-items:flex-end">
         <div style="color:var(--muted);font-size:.8rem">${fmtDate(m.created_at)}</div>
         ${!m.is_read ? `<button class="btn btn-ghost" onclick="markRead(${m.id})">Mark read</button>` : ''}
-        <a class="btn btn-outline" href="mailto:${escapeAttr(m.email)}?subject=Re:%20Your%20message%20to%20Bond%20Therapy" target="_blank" rel="noopener">Reply</a>
+        <button class="btn btn-outline" onclick="openReplyModal(${m.id}, '${escapeAttr(m.email)}', '${escapeAttr(m.first_name||'')}')">Reply by email</button>
         <button class="btn btn-red" onclick="deleteMessage(${m.id})">Delete</button>
       </div>
     </div>
@@ -700,6 +700,85 @@ async function markRead(id) {
   await api(`/api/admin/messages/${id}/read`, { method: 'POST' });
   refresh();
   loadMessages();
+}
+
+let _adminConfigCache = null;
+async function getAdminConfig(){
+  if(_adminConfigCache) return _adminConfigCache;
+  try { _adminConfigCache = await api('/api/admin/config'); } catch { _adminConfigCache = { emailEnabled: false }; }
+  return _adminConfigCache;
+}
+
+async function openReplyModal(id, email, firstName){
+  const cfg = await getAdminConfig();
+  const replies = await api(`/api/admin/messages/${id}/replies`).catch(() => []);
+  const repliesHtml = (replies && replies.length) ? `
+    <div style="margin-top:14px">
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Previous replies</div>
+      ${replies.map(r => `
+        <div style="background:#f3f6fc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">${fmtDate(r.created_at)} ${r.delivered ? '<span class="pill pill-green" style="margin-left:6px">delivered</span>' : '<span class="pill pill-red" style="margin-left:6px">failed</span>'}</div>
+          <div style="white-space:pre-wrap;font-size:.92rem">${escapeHtml(r.body)}</div>
+          ${r.delivery_error ? `<div style="color:var(--red);font-size:.78rem;margin-top:6px">Error: ${escapeHtml(r.delivery_error)}</div>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  const warning = cfg.emailEnabled ? '' : `
+    <div style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:12px 14px;border-radius:10px;font-size:.88rem;margin-bottom:14px">
+      <strong>Email isn't configured.</strong> Set <code>RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in your .env file to send replies.
+    </div>`;
+
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2>Reply to ${escapeHtml(firstName || email)}</h2>
+    <p class="sub">An email will be sent to <strong>${escapeHtml(email)}</strong> from your configured sender address.</p>
+    ${warning}
+    <label class="modal-label" style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase">Your reply</label>
+    <textarea id="replyBody" rows="8" placeholder="Type your response…" maxlength="5000" style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-top:8px;resize:vertical;font-family:inherit;line-height:1.6"></textarea>
+    <div id="replyErr" style="display:none;color:var(--red);font-size:.88rem;margin-top:10px"></div>
+    ${repliesHtml}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="replySendBtn" ${cfg.emailEnabled ? '' : 'disabled style="opacity:.5;cursor:not-allowed"'} onclick="sendReply(${id})">Send reply</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+async function sendReply(id){
+  const body = document.getElementById('replyBody').value.trim();
+  const err = document.getElementById('replyErr');
+  err.style.display = 'none';
+  if(!body){ err.textContent = 'Please write a reply first.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('replySendBtn');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`/api/admin/messages/${id}/reply`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body })
+    });
+    if(res.status === 503){
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.message || 'Email is not configured.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = orig;
+      return;
+    }
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.reason ? `Could not send: ${data.reason}` : 'Could not send. Try again.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = orig;
+      return;
+    }
+    closeModal();
+    refresh();
+    loadMessages();
+  } catch {
+    err.textContent = 'Network error.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = orig;
+  }
 }
 
 async function deleteMessage(id) {

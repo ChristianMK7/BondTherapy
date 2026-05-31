@@ -948,7 +948,7 @@
         <li><a href="#" onclick="navigateTo('faq');return false;" data-page="faq">FAQ</a></li>
         <li><a href="#" onclick="navigateTo('contact');return false;" data-page="contact">Contact</a></li>
         <li id="myBookingsNav" style="display:none"><a href="#" onclick="navigateTo('bookings');return false;" data-page="bookings">My Bookings</a></li>
-        <li><a href="subwebt.html" class="nav-therapist-link">I'm a Therapist</a></li>
+        <li id="therapistNav"><a href="subwebt.html" id="therapistNavLink" class="nav-therapist-link">I'm a Therapist</a></li>
       </ul>
 
       <div class="nav-actions" id="navActions">
@@ -970,7 +970,7 @@
       <a href="#" onclick="navigateTo('blog');toggleMenu();return false;">Blog</a>
       <a href="#" onclick="navigateTo('faq');toggleMenu();return false;">FAQ</a>
       <a href="#" onclick="navigateTo('contact');toggleMenu();return false;">Contact</a>
-      <a href="subwebt.html" style="color:var(--primary-2);font-weight:600">I'm a Therapist</a>
+      <a href="subwebt.html" id="therapistNavLinkMobile" style="color:var(--primary-2);font-weight:600">I'm a Therapist</a>
       <a href="#" id="authBtnMobile" onclick="openAuthModal('login');toggleMenu();return false;">Sign in</a>
       <div style="padding:16px 0 4px"><button class="btn btn-primary" style="width:100%" onclick="navigateTo('find');toggleMenu()">Book Now</button></div>
     </div>
@@ -1514,6 +1514,8 @@
         <div class="summary-row"><span>Specialist</span><strong id="sumDoctor">—</strong></div>
         <div class="summary-row"><span>Time</span><strong id="sumTime">—</strong></div>
         <div class="summary-row"><span>Type</span><strong id="sumType">—</strong></div>
+        <div class="summary-row"><span>Session price</span><strong id="sumSubtotal">$60</strong></div>
+        <div class="summary-row" id="sumFeeRow" style="display:none"><span id="sumFeeLabel">Platform fee</span><strong id="sumFee">$0</strong></div>
         <div class="summary-row summary-total"><span>Total</span><strong id="sumTotal">$60</strong></div>
       </div>
       <button class="modal-confirm" onclick="confirmBooking()">Confirm appointment</button>
@@ -1548,8 +1550,8 @@
           <input class="field-input" id="auth-phone" type="tel" placeholder="+961 …">
         </div>
         <div class="modal-full">
-          <span class="modal-label">Email</span>
-          <input class="field-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
+          <span class="modal-label" id="authEmailLabel">Email</span>
+          <input class="field-input" id="auth-email" type="text" placeholder="you@example.com" autocomplete="username">
         </div>
         <div class="modal-full">
           <span class="modal-label">Password</span>
@@ -1628,6 +1630,27 @@
       <textarea class="field-input" id="reviewComment" rows="4" placeholder="Tell others what your experience was like…" maxlength="1000" style="resize:vertical"></textarea>
       <div id="reviewErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:14px"></div>
       <button class="modal-confirm" onclick="submitReview()">Submit review</button>
+    </div>
+  </div>
+
+  <!-- CHAT MODAL -->
+  <div class="modal-overlay" id="chatOverlay" onclick="if(event.target===this)closeChatModal()">
+    <div class="modal" style="max-width:520px;display:flex;flex-direction:column" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <div class="section-kicker" style="margin-bottom:10px">Messages</div>
+          <div class="modal-title" id="chatTitle">Chat</div>
+        </div>
+        <button class="modal-close" onclick="closeChatModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="chatThread" style="background:rgba(43,108,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:200px;max-height:340px;overflow-y:auto;margin:8px 0 14px;display:flex;flex-direction:column;gap:10px">
+        <div style="color:var(--muted);text-align:center;font-size:.9rem;padding:40px 0">Loading…</div>
+      </div>
+      <textarea class="field-input" id="chatBody" rows="3" placeholder="Type your message…" maxlength="2000" style="resize:vertical"></textarea>
+      <div id="chatErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:10px"></div>
+      <button class="modal-confirm" id="chatSend" onclick="sendChatMessage()">Send message</button>
     </div>
   </div>
 
@@ -1902,6 +1925,7 @@
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
                 ${canPay ? `<button class="btn btn-primary" onclick="openPayModal(${b.id}, ${b.total || 0})">Pay now</button>` : ''}
+                <button class="btn btn-outline" onclick="openChatModal(${b.id}, '${escapeAttr(b.therapist_name)}', 'client')">Messages</button>
                 ${canReview ? `<button class="btn btn-ghost" onclick="openReviewModal(${b.id}, '${escapeAttr(b.therapist_name)}')">Leave review</button>` : ''}
                 ${status !== 'cancelled' ? `<button class="btn btn-outline" onclick="cancelBooking(${b.id})">Cancel</button>` : ''}
               </div>
@@ -2013,6 +2037,78 @@
     }
 
     function escapeHtml(s){ if(s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    /* === CHAT === */
+    let chatBookingId = null, chatRole = 'client';
+    function openChatModal(bookingId, otherName, role){
+      chatBookingId = bookingId;
+      chatRole = role || 'client';
+      document.getElementById('chatTitle').textContent = role === 'therapist' ? `Chat with ${otherName}` : `Messages with ${otherName}`;
+      document.getElementById('chatBody').value = '';
+      document.getElementById('chatErr').style.display = 'none';
+      document.getElementById('chatOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      loadChatMessages();
+    }
+    function closeChatModal(){
+      document.getElementById('chatOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      chatBookingId = null;
+    }
+    async function loadChatMessages(){
+      if(!chatBookingId) return;
+      const url = chatRole === 'therapist'
+        ? `/api/therapists/me/bookings/${chatBookingId}/messages`
+        : `/api/clients/me/bookings/${chatBookingId}/messages`;
+      const thread = document.getElementById('chatThread');
+      try {
+        const r = await fetch(url, { credentials:'include' });
+        if(!r.ok){ thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0">Could not load messages.</div>`; return; }
+        const rows = await r.json();
+        if(!rows.length){
+          thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:.9rem">No messages yet. Start the conversation below.</div>`;
+          return;
+        }
+        thread.innerHTML = rows.map(m => {
+          const mine = m.sender_role === chatRole;
+          const bubble = mine
+            ? `background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px`
+            : `background:#fff;color:var(--text);align-self:flex-start;border:1px solid var(--line);border-bottom-left-radius:4px`;
+          const label = mine ? 'You' : (m.sender_role === 'therapist' ? 'Therapist' : (m.sender_role === 'client' ? 'Client' : 'Admin'));
+          return `
+            <div style="max-width:80%;${bubble};padding:10px 14px;border-radius:14px;font-size:.92rem;line-height:1.45;word-wrap:break-word;white-space:pre-wrap">
+              <div style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-bottom:4px">${label} · ${(m.created_at||'').replace('T',' ').slice(0,16)}</div>
+              ${escapeHtml(m.body)}
+            </div>`;
+        }).join('');
+        thread.scrollTop = thread.scrollHeight;
+      } catch {
+        thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0">Network error.</div>`;
+      }
+    }
+    async function sendChatMessage(){
+      const body = document.getElementById('chatBody').value.trim();
+      const err = document.getElementById('chatErr');
+      err.style.display = 'none';
+      if(!body){ err.textContent = 'Please write a message first.'; err.style.display='block'; return; }
+      const btn = document.getElementById('chatSend');
+      btn.disabled = true;
+      try {
+        const url = chatRole === 'therapist'
+          ? `/api/therapists/me/bookings/${chatBookingId}/messages`
+          : `/api/clients/me/bookings/${chatBookingId}/messages`;
+        const r = await fetch(url, {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ body })
+        });
+        if(!r.ok){ err.textContent = 'Could not send. Try again.'; err.style.display='block'; return; }
+        document.getElementById('chatBody').value = '';
+        await loadChatMessages();
+      } finally {
+        btn.disabled = false;
+      }
+    }
 
     /* === DATA === */
     let sortedSpecs = [];
@@ -2247,18 +2343,54 @@
       document.getElementById('specialists').scrollIntoView({ behavior:'smooth', block:'start' });
     }
 
-    function currentBookingPrice(){
+    let _platformFeePercent = null; // cached after first /api/pricing/quote call
+
+    function currentSubtotal(){
       if(!selectedDoctor) return 60;
       if(activeMeeting === 'On-site') return selectedDoctor.onsitePrice || 80;
       if(activeMeeting === 'Online')  return selectedDoctor.onlinePrice || 60;
       return selectedDoctor.onlinePrice || selectedDoctor.onsitePrice || 60;
+    }
+    // Subtotal + fee, computed locally once we know the fee %. If we don't have
+    // the rate yet, fall back to the subtotal and let the server's response correct it.
+    function currentBookingPrice(){
+      const sub = currentSubtotal();
+      if(_platformFeePercent == null) return sub;
+      return sub + Math.round(sub * _platformFeePercent / 100);
+    }
+    function currentPlatformFee(){
+      const sub = currentSubtotal();
+      if(_platformFeePercent == null) return 0;
+      return Math.round(sub * _platformFeePercent / 100);
+    }
+
+    async function ensureFeePercent(){
+      if(_platformFeePercent != null) return;
+      try {
+        const r = await fetch('/api/pricing/quote?subtotal=100');
+        if(r.ok){
+          const d = await r.json();
+          _platformFeePercent = Number(d.feePercent) || 0;
+        } else _platformFeePercent = 0;
+      } catch { _platformFeePercent = 0; }
     }
 
     function syncSummary(){
       document.getElementById('sumDoctor').textContent = selectedDoctor ? selectedDoctor.name : '—';
       document.getElementById('sumTime').textContent = selectedTime || '—';
       document.getElementById('sumType').textContent = activeMeeting || '—';
-      document.getElementById('sumTotal').textContent = '$' + currentBookingPrice();
+      const sub = currentSubtotal();
+      const fee = currentPlatformFee();
+      document.getElementById('sumSubtotal').textContent = '$' + sub;
+      const feeRow = document.getElementById('sumFeeRow');
+      if(fee > 0){
+        feeRow.style.display = '';
+        document.getElementById('sumFeeLabel').textContent = `Platform fee (${_platformFeePercent}%)`;
+        document.getElementById('sumFee').textContent = '$' + fee;
+      } else {
+        feeRow.style.display = 'none';
+      }
+      document.getElementById('sumTotal').textContent = '$' + (sub + fee);
     }
 
     function setMeetingType(t){
@@ -2272,6 +2404,7 @@
       selectedDoctor = sortedSpecs.find(d => d.id===id);
       if(!selectedDoctor){ showToast('Therapist not found.'); return; }
       selectedTime=''; activeMeeting=''; bookedSlots = [];
+      ensureFeePercent().then(syncSummary);
       document.getElementById('modalDoctor').value = `${selectedDoctor.name} — ${selectedDoctor.specialty}, ${selectedDoctor.city}`;
       const dateInput = document.getElementById('bookingDate');
       dateInput.min = todayISO();
@@ -2321,12 +2454,19 @@
     let authMode = 'login';
     let pendingBooking = false;
 
+    let currentTherapist = null;
+
     async function checkAuth(){
       try {
-        const res = await fetch('/api/clients/me', { credentials:'include' });
-        const data = await res.json();
-        currentUser = data.loggedIn ? data : null;
-      } catch { currentUser = null; }
+        const [clientRes, therapistRes] = await Promise.all([
+          fetch('/api/clients/me', { credentials:'include' }),
+          fetch('/api/therapists/me', { credentials:'include' })
+        ]);
+        const cdata = await clientRes.json();
+        const tdata = await therapistRes.json();
+        currentUser = cdata.loggedIn ? cdata : null;
+        currentTherapist = tdata.loggedIn ? tdata : null;
+      } catch { currentUser = null; currentTherapist = null; }
       renderAuthState();
     }
 
@@ -2335,6 +2475,18 @@
       const mobileBtn = document.getElementById('authBtnMobile');
       const myBookingsNav = document.getElementById('myBookingsNav');
       if(myBookingsNav) myBookingsNav.style.display = currentUser ? '' : 'none';
+
+      // Therapist nav: swap "I'm a Therapist" → "My Portal" when a therapist is signed in.
+      const tLink = document.getElementById('therapistNavLink');
+      const tLinkMobile = document.getElementById('therapistNavLinkMobile');
+      if(currentTherapist){
+        if(tLink){ tLink.textContent = 'My Portal'; tLink.setAttribute('href', '/therapist-portal'); }
+        if(tLinkMobile){ tLinkMobile.textContent = 'My Portal'; tLinkMobile.setAttribute('href', '/therapist-portal'); }
+      } else {
+        if(tLink){ tLink.textContent = "I'm a Therapist"; tLink.setAttribute('href', 'subwebt.html'); }
+        if(tLinkMobile){ tLinkMobile.textContent = "I'm a Therapist"; tLinkMobile.setAttribute('href', 'subwebt.html'); }
+      }
+
       if(currentUser){
         if(btn){ btn.textContent = 'Sign out'; btn.onclick = doLogout; btn.title = currentUser.email; }
         if(mobileBtn){ mobileBtn.textContent = `Sign out (${currentUser.email})`; mobileBtn.onclick = (e)=>{e.preventDefault();doLogout();toggleMenu();}; }
@@ -2427,6 +2579,12 @@
           err.style.display = 'block';
           return;
         }
+        // Admin logged in via the client login form — send them straight to /admin.
+        if(data.isAdmin){
+          showToast('Signed in as admin — taking you to the dashboard.');
+          window.location.href = data.redirect || '/admin';
+          return;
+        }
         await checkAuth();
         showToast(authMode === 'signup' ? 'Account created!' : 'Welcome back!');
         closeAuthModal();
@@ -2471,7 +2629,7 @@
             appointmentDate: dateVal,
             timeSlot: selectedTime,
             sessionType: activeMeeting,
-            total: currentBookingPrice()
+            total: currentSubtotal()
           })
         });
         if(res.status === 401){
@@ -2490,8 +2648,9 @@
         closeModalDirect();
         showToast(`Booked with ${selectedDoctor.name} on ${dateVal} at ${selectedTime}.`);
         if(data.id) {
-          // Prompt for payment immediately
-          setTimeout(() => openPayModal(data.id, currentBookingPrice()), 600);
+          // Prompt for payment immediately, using the server's authoritative total.
+          const total = Number(data.total) || currentBookingPrice();
+          setTimeout(() => openPayModal(data.id, total), 600);
         }
       } catch {
         showToast('Network error. Please try again.');

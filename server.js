@@ -15,10 +15,49 @@ const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
 const PROD = process.env.NODE_ENV === 'production';
 const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+const PLATFORM_FEE_PERCENT = Math.max(0, Number(process.env.PLATFORM_FEE_PERCENT) || 0);
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || '';
+const EMAIL_ADMIN = process.env.EMAIL_ADMIN || '';
 const PAYMENT_INFO = {
   whish: { number: process.env.WHISH_NUMBER || '+961 XX XXX XXX', name: process.env.WHISH_NAME || '' },
   omt:   { number: process.env.OMT_NUMBER   || '+961 XX XXX XXX', name: process.env.OMT_NAME   || '' }
 };
+
+// ─── EMAIL (Resend) ─────────────────────────────────────────────────────────
+let resendClient = null;
+if (RESEND_API_KEY) {
+  try {
+    const { Resend } = require('resend');
+    resendClient = new Resend(RESEND_API_KEY);
+  } catch (e) {
+    console.warn('Resend package not available — emails disabled:', e.message);
+  }
+}
+const EMAIL_ENABLED = !!(resendClient && EMAIL_FROM);
+
+async function sendEmail({ to, subject, html, text }) {
+  if (!EMAIL_ENABLED || !to) return { ok: false, reason: 'email_disabled_or_no_recipient' };
+  try {
+    await resendClient.emails.send({ from: EMAIL_FROM, to, subject, html, text });
+    return { ok: true };
+  } catch (e) {
+    console.error('Email send failed:', e.message);
+    return { ok: false, reason: e.message };
+  }
+}
+
+function notifyAdmin(subject, html, text) {
+  if (!EMAIL_ADMIN) return Promise.resolve({ ok: false, reason: 'no_admin_email' });
+  return sendEmail({ to: EMAIL_ADMIN, subject: `[Bond Therapy] ${subject}`, html, text });
+}
+
+function priceWithFee(subtotal) {
+  const sub = Math.max(0, Math.round(Number(subtotal) || 0));
+  const fee = Math.round(sub * PLATFORM_FEE_PERCENT) / 100;
+  const feeRounded = Math.round(sub * PLATFORM_FEE_PERCENT / 100);
+  return { subtotal: sub, platformFee: feeRounded, total: sub + feeRounded };
+}
 
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, 'data');
@@ -157,6 +196,34 @@ ensureColumn('bookings', 'payment_method', 'TEXT');
 ensureColumn('bookings', 'payment_ref', 'TEXT');
 ensureColumn('bookings', 'payment_status', "TEXT DEFAULT 'unpaid'");
 ensureColumn('bookings', 'payment_submitted_at', 'TEXT');
+ensureColumn('bookings', 'subtotal', 'INTEGER');
+ensureColumn('bookings', 'platform_fee', 'INTEGER DEFAULT 0');
+
+// Per-booking chat between therapist and client
+db.exec(`
+CREATE TABLE IF NOT EXISTS booking_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id INTEGER NOT NULL,
+  sender_role TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  read_by_client INTEGER DEFAULT 0,
+  read_by_therapist INTEGER DEFAULT 0,
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_booking ON booking_messages(booking_id);
+
+CREATE TABLE IF NOT EXISTS contact_replies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL,
+  body TEXT NOT NULL,
+  delivered INTEGER DEFAULT 0,
+  delivery_error TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_contact_replies_message ON contact_replies(message_id);
+`);
 
 // Prevent two active bookings for the same therapist/date/time
 db.exec(`
@@ -261,7 +328,15 @@ app.post('/api/clients/signup', signupLimiter, (req, res) => {
 app.post('/api/clients/login', loginLimiter, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email_and_password_required' });
-  const row = db.prepare(`SELECT * FROM clients WHERE email = ?`).get(email.toLowerCase().trim());
+
+  // If the user typed the admin username (no '@') and matches admin creds, log in as admin.
+  const identifier = String(email).trim();
+  if (!identifier.includes('@') && identifier.toLowerCase() === ADMIN_USER.toLowerCase() && password === ADMIN_PASS) {
+    req.session.isAdmin = true;
+    return res.json({ ok: true, isAdmin: true, redirect: '/admin' });
+  }
+
+  const row = db.prepare(`SELECT * FROM clients WHERE email = ?`).get(identifier.toLowerCase());
   if (!row || !bcrypt.compareSync(password, row.password_hash)) {
     return res.status(401).json({ error: 'invalid_credentials' });
   }
@@ -287,8 +362,11 @@ app.post('/api/clients/forgot-password', forgotLimiter, (req, res) => {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     db.prepare(`INSERT INTO password_resets (client_id, token, expires_at) VALUES (?, ?, ?)`)
       .run(client.id, token, expiresAt);
-    // When SMTP is wired up later, email the link here:
-    // sendEmail(email, `${PUBLIC_URL}/reset-password?token=${token}`);
+    notifyAdmin(
+      'Password reset requested',
+      `<p>${String(email).toLowerCase().trim()} requested a password reset.</p>
+       <p>Approve it from the admin panel to generate a one-time link: ${PUBLIC_URL}/admin</p>`
+    ).catch(()=>{});
   }
   res.json({ ok: true });
 });
@@ -363,10 +441,14 @@ app.post('/api/bookings', bookingLimiter, requireClient, (req, res) => {
   const d = new Date(appointmentDate + 'T00:00:00');
   if (d < today) return res.status(400).json({ error: 'date_in_past' });
 
+  // The client sends the therapist's price as 'total'. We treat it as the subtotal
+  // and add the platform fee on top — what the client actually pays is total = subtotal + fee.
+  const priced = priceWithFee(total || 60);
+
   try {
     const info = db.prepare(`
-      INSERT INTO bookings (client_id, therapist_id, therapist_name, therapist_specialty, therapist_city, appointment_date, time_slot, session_type, total)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bookings (client_id, therapist_id, therapist_name, therapist_specialty, therapist_city, appointment_date, time_slot, session_type, subtotal, platform_fee, total)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       req.session.clientId,
       therapistId,
@@ -376,9 +458,22 @@ app.post('/api/bookings', bookingLimiter, requireClient, (req, res) => {
       appointmentDate,
       timeSlot,
       sessionType,
-      total || 60
+      priced.subtotal,
+      priced.platformFee,
+      priced.total
     );
-    res.json({ ok: true, id: info.lastInsertRowid });
+    notifyAdmin(
+      'New booking',
+      `<p>A new booking was made.</p>
+       <ul>
+         <li><b>Client:</b> ${req.session.clientEmail || req.session.clientId}</li>
+         <li><b>Therapist:</b> ${therapistName}</li>
+         <li><b>Date / Time:</b> ${appointmentDate} ${timeSlot}</li>
+         <li><b>Session:</b> ${sessionType}</li>
+         <li><b>Subtotal / Fee / Total:</b> $${priced.subtotal} / $${priced.platformFee} / $${priced.total}</li>
+       </ul>`
+    ).catch(()=>{});
+    res.json({ ok: true, id: info.lastInsertRowid, subtotal: priced.subtotal, platformFee: priced.platformFee, total: priced.total });
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) {
       return res.status(409).json({ error: 'slot_taken' });
@@ -386,6 +481,12 @@ app.post('/api/bookings', bookingLimiter, requireClient, (req, res) => {
     console.error(e);
     res.status(500).json({ error: 'booking_failed' });
   }
+});
+
+// Public pricing — lets the booking UI show fee + total without hard-coding the rate
+app.get('/api/pricing/quote', (req, res) => {
+  const sub = Number(req.query.subtotal) || 0;
+  res.json({ feePercent: PLATFORM_FEE_PERCENT, ...priceWithFee(sub) });
 });
 
 // Time slots already booked for a therapist on a date (for the booking UI)
@@ -428,14 +529,23 @@ app.get('/api/payment-info', (req, res) => {
 app.post('/api/clients/me/bookings/:id/payment', requireClient, (req, res) => {
   const { method, ref } = req.body || {};
   if (!['whish','omt'].includes(method)) return res.status(400).json({ error: 'invalid_method' });
-  if (!ref || !ref.trim()) return res.status(400).json({ error: 'missing_ref' });
-  const r = db.prepare(`SELECT id FROM bookings WHERE id = ? AND client_id = ?`).get(req.params.id, req.session.clientId);
+  const refTrimmed = (ref || '').toString().trim();
+  if (!refTrimmed) return res.status(400).json({ error: 'missing_ref' });
+  if (refTrimmed.length < 3) return res.status(400).json({ error: 'ref_too_short' });
+  if (refTrimmed.length > 80) return res.status(400).json({ error: 'ref_too_long' });
+  const r = db.prepare(`SELECT id, therapist_name, total FROM bookings WHERE id = ? AND client_id = ?`).get(req.params.id, req.session.clientId);
   if (!r) return res.status(404).json({ error: 'not_found' });
   db.prepare(`
     UPDATE bookings
     SET payment_method = ?, payment_ref = ?, payment_status = 'pending_review', payment_submitted_at = datetime('now')
     WHERE id = ?
-  `).run(method, ref.trim().slice(0, 80), req.params.id);
+  `).run(method, refTrimmed, req.params.id);
+  notifyAdmin(
+    'Payment submitted — needs review',
+    `<p>Booking <b>#${req.params.id}</b> with <b>${r.therapist_name}</b> ($${r.total}) has a new payment reference.</p>
+     <p>Method: <b>${method.toUpperCase()}</b> · Reference: <b>${refTrimmed}</b></p>
+     <p>Open the admin panel to confirm or decline.</p>`
+  ).catch(()=>{});
   res.json({ ok: true });
 });
 
@@ -446,6 +556,19 @@ app.post('/api/admin/bookings/:id/payment/:action', requireAdmin, (req, res) => 
   const newStatus = action === 'confirm' ? 'confirmed' : 'declined';
   const newBookingStatus = action === 'confirm' ? 'confirmed' : 'pending';
   db.prepare(`UPDATE bookings SET payment_status = ?, status = ? WHERE id = ?`).run(newStatus, newBookingStatus, req.params.id);
+  const b = db.prepare(`SELECT b.*, c.email AS client_email, c.first_name AS client_first_name FROM bookings b LEFT JOIN clients c ON c.id = b.client_id WHERE b.id = ?`).get(req.params.id);
+  if (b?.client_email) {
+    sendEmail({
+      to: b.client_email,
+      subject: action === 'confirm' ? 'Your booking is confirmed' : 'Payment issue with your booking',
+      html: action === 'confirm'
+        ? `<p>Hi ${b.client_first_name || 'there'},</p>
+           <p>Your payment was confirmed and your appointment with <b>${b.therapist_name}</b> on <b>${b.appointment_date} ${b.time_slot}</b> is set.</p>`
+        : `<p>Hi ${b.client_first_name || 'there'},</p>
+           <p>We were unable to verify the payment reference you submitted for your appointment with <b>${b.therapist_name}</b> on <b>${b.appointment_date} ${b.time_slot}</b>.</p>
+           <p>Please sign in and resubmit a valid reference: ${PUBLIC_URL}/</p>`
+    }).catch(()=>{});
+  }
   res.json({ ok: true });
 });
 
@@ -529,9 +652,156 @@ app.delete('/api/admin/blog/:id', requireAdmin, (req, res) => {
 app.post('/api/messages', contactLimiter, (req, res) => {
   const { firstName, lastName, email, phone, message } = req.body || {};
   if (!firstName || !email || !message) return res.status(400).json({ error: 'missing_fields' });
-  db.prepare(`INSERT INTO messages (first_name, last_name, email, phone, message) VALUES (?, ?, ?, ?, ?)`)
+  const info = db.prepare(`INSERT INTO messages (first_name, last_name, email, phone, message) VALUES (?, ?, ?, ?, ?)`)
     .run(firstName, lastName || '', email, phone || '', message);
+  notifyAdmin(
+    'New contact message',
+    `<p><b>${firstName} ${lastName || ''}</b> &lt;${email}&gt;${phone ? ' · ' + phone : ''}</p>
+     <p style="white-space:pre-wrap;border-left:3px solid #ccc;padding-left:12px">${String(message).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</p>
+     <p>Reply from the admin panel: ${PUBLIC_URL}/admin</p>`
+  ).catch(()=>{});
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
+// ─── BOOKING CHAT (therapist ↔ client) ──────────────────────────────────────
+function bookingForRole(bookingId, role, sessionUserId) {
+  if (role === 'client') {
+    return db.prepare(`SELECT * FROM bookings WHERE id = ? AND client_id = ?`).get(bookingId, sessionUserId);
+  }
+  if (role === 'therapist') {
+    return db.prepare(`SELECT * FROM bookings WHERE id = ? AND therapist_id = ?`).get(bookingId, sessionUserId);
+  }
+  return null;
+}
+
+function loadBookingMessages(bookingId, viewerRole) {
+  const rows = db.prepare(`SELECT id, sender_role, body, created_at, read_by_client, read_by_therapist FROM booking_messages WHERE booking_id = ? ORDER BY id ASC`).all(bookingId);
+  // Mark messages from the other side as read by this viewer.
+  if (viewerRole === 'client') {
+    db.prepare(`UPDATE booking_messages SET read_by_client = 1 WHERE booking_id = ? AND sender_role != 'client' AND read_by_client = 0`).run(bookingId);
+  } else if (viewerRole === 'therapist') {
+    db.prepare(`UPDATE booking_messages SET read_by_therapist = 1 WHERE booking_id = ? AND sender_role != 'therapist' AND read_by_therapist = 0`).run(bookingId);
+  }
+  return rows;
+}
+
+// Client view of a thread
+app.get('/api/clients/me/bookings/:id/messages', requireClient, (req, res) => {
+  const booking = bookingForRole(req.params.id, 'client', req.session.clientId);
+  if (!booking) return res.status(404).json({ error: 'not_found' });
+  res.json(loadBookingMessages(booking.id, 'client'));
+});
+
+app.post('/api/clients/me/bookings/:id/messages', requireClient, (req, res) => {
+  const booking = bookingForRole(req.params.id, 'client', req.session.clientId);
+  if (!booking) return res.status(404).json({ error: 'not_found' });
+  const body = String(req.body?.body || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty_body' });
+  if (body.length > 2000) return res.status(400).json({ error: 'too_long' });
+  db.prepare(`INSERT INTO booking_messages (booking_id, sender_role, body, read_by_client) VALUES (?, 'client', ?, 1)`)
+    .run(booking.id, body);
+  // Notify the therapist by email and the admin.
+  const therapist = booking.therapist_id
+    ? db.prepare(`SELECT email, first_name FROM therapists WHERE id = ?`).get(booking.therapist_id)
+    : null;
+  if (therapist?.email) {
+    sendEmail({
+      to: therapist.email,
+      subject: `New message about your booking #${booking.id}`,
+      html: `<p>Hi ${therapist.first_name || 'there'},</p>
+             <p>You have a new message from your client about the booking on <b>${booking.appointment_date} ${booking.time_slot}</b>.</p>
+             <blockquote style="border-left:3px solid #ccc;padding-left:12px;white-space:pre-wrap">${body.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
+             <p>Sign in to reply: ${PUBLIC_URL}/therapist-portal</p>`
+    }).catch(()=>{});
+  }
+  notifyAdmin(`Booking #${booking.id} — client replied`, `<p>Client sent a chat message on booking #${booking.id}.</p>`).catch(()=>{});
   res.json({ ok: true });
+});
+
+// Therapist view of a thread
+app.get('/api/therapists/me/bookings/:id/messages', requireTherapist, (req, res) => {
+  const booking = bookingForRole(req.params.id, 'therapist', req.session.therapistId);
+  if (!booking) return res.status(404).json({ error: 'not_found' });
+  res.json(loadBookingMessages(booking.id, 'therapist'));
+});
+
+app.post('/api/therapists/me/bookings/:id/messages', requireTherapist, (req, res) => {
+  const booking = bookingForRole(req.params.id, 'therapist', req.session.therapistId);
+  if (!booking) return res.status(404).json({ error: 'not_found' });
+  const body = String(req.body?.body || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty_body' });
+  if (body.length > 2000) return res.status(400).json({ error: 'too_long' });
+  db.prepare(`INSERT INTO booking_messages (booking_id, sender_role, body, read_by_therapist) VALUES (?, 'therapist', ?, 1)`)
+    .run(booking.id, body);
+  const client = db.prepare(`SELECT email, first_name FROM clients WHERE id = ?`).get(booking.client_id);
+  if (client?.email) {
+    sendEmail({
+      to: client.email,
+      subject: `New message about your appointment with ${booking.therapist_name}`,
+      html: `<p>Hi ${client.first_name || 'there'},</p>
+             <p>${booking.therapist_name} sent you a message about your appointment on <b>${booking.appointment_date} ${booking.time_slot}</b>.</p>
+             <blockquote style="border-left:3px solid #ccc;padding-left:12px;white-space:pre-wrap">${body.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>
+             <p>Sign in to reply: ${PUBLIC_URL}/</p>`
+    }).catch(()=>{});
+  }
+  notifyAdmin(`Booking #${booking.id} — therapist replied`, `<p>Therapist sent a chat message on booking #${booking.id}.</p>`).catch(()=>{});
+  res.json({ ok: true });
+});
+
+// Unread chat count for the client (used to badge "My Bookings")
+app.get('/api/clients/me/messages/unread', requireClient, (req, res) => {
+  const r = db.prepare(`
+    SELECT COUNT(*) AS c FROM booking_messages bm
+    JOIN bookings b ON b.id = bm.booking_id
+    WHERE b.client_id = ? AND bm.sender_role != 'client' AND bm.read_by_client = 0
+  `).get(req.session.clientId);
+  res.json({ unread: r.c || 0 });
+});
+
+// Unread chat count for the therapist
+app.get('/api/therapists/me/messages/unread', requireTherapist, (req, res) => {
+  const r = db.prepare(`
+    SELECT COUNT(*) AS c FROM booking_messages bm
+    JOIN bookings b ON b.id = bm.booking_id
+    WHERE b.therapist_id = ? AND bm.sender_role != 'therapist' AND bm.read_by_therapist = 0
+  `).get(req.session.therapistId);
+  res.json({ unread: r.c || 0 });
+});
+
+// ─── ADMIN: REPLY TO CONTACT MESSAGES ───────────────────────────────────────
+app.post('/api/admin/messages/:id/reply', requireAdmin, async (req, res) => {
+  const body = String(req.body?.body || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty_body' });
+  if (body.length > 5000) return res.status(400).json({ error: 'too_long' });
+  const m = db.prepare(`SELECT * FROM messages WHERE id = ?`).get(req.params.id);
+  if (!m) return res.status(404).json({ error: 'not_found' });
+  if (!EMAIL_ENABLED) {
+    return res.status(503).json({ error: 'email_not_configured', message: 'Set RESEND_API_KEY and EMAIL_FROM in your .env to send replies.' });
+  }
+  const result = await sendEmail({
+    to: m.email,
+    subject: `Re: Your message to Bond Therapy`,
+    html: `<p>Hi ${m.first_name || 'there'},</p>
+           <div style="white-space:pre-wrap">${body.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+           <hr><p style="color:#888;font-size:.85em">This is a reply to a message you sent through ${PUBLIC_URL}.<br>Your original message:</p>
+           <blockquote style="border-left:3px solid #ccc;padding-left:12px;white-space:pre-wrap;color:#555">${String(m.message || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</blockquote>`,
+    text: body
+  });
+  db.prepare(`INSERT INTO contact_replies (message_id, body, delivered, delivery_error) VALUES (?, ?, ?, ?)`)
+    .run(req.params.id, body, result.ok ? 1 : 0, result.ok ? null : (result.reason || 'unknown'));
+  db.prepare(`UPDATE messages SET is_read = 1 WHERE id = ?`).run(req.params.id);
+  if (!result.ok) return res.status(500).json({ error: 'send_failed', reason: result.reason });
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/messages/:id/replies', requireAdmin, (req, res) => {
+  const rows = db.prepare(`SELECT id, body, delivered, delivery_error, created_at FROM contact_replies WHERE message_id = ? ORDER BY id ASC`).all(req.params.id);
+  res.json(rows);
+});
+
+// Admin can see whether email is configured (used by the UI to disable/enable Reply)
+app.get('/api/admin/config', requireAdmin, (req, res) => {
+  res.json({ emailEnabled: EMAIL_ENABLED, platformFeePercent: PLATFORM_FEE_PERCENT });
 });
 
 // ─── THERAPIST SIGNUP ───────────────────────────────────────────────────────
@@ -589,6 +859,12 @@ app.post('/api/therapists/signup',
       );
       // Auto-login the therapist so they can track their application
       req.session.therapistId = info.lastInsertRowid;
+      notifyAdmin(
+        'New therapist application',
+        `<p><b>${b.firstName} ${b.lastName}</b> &lt;${(b.email||'').toLowerCase().trim()}&gt; applied as a therapist.</p>
+         <p>Specialty: ${b.specialty || '—'} · City: ${b.city || '—'}</p>
+         <p>Review the application: ${PUBLIC_URL}/admin</p>`
+      ).catch(()=>{});
       res.json({ ok: true, id: info.lastInsertRowid });
     } catch (e) {
       if (String(e.message).includes('UNIQUE')) {
@@ -821,11 +1097,26 @@ app.get('/api/admin/therapists', requireAdmin, (req, res) => {
 
 app.post('/api/admin/therapists/:id/approve', requireAdmin, (req, res) => {
   db.prepare(`UPDATE therapists SET status = 'approved' WHERE id = ?`).run(req.params.id);
+  const t = db.prepare(`SELECT email, first_name FROM therapists WHERE id = ?`).get(req.params.id);
+  if (t?.email) sendEmail({
+    to: t.email,
+    subject: 'Your Bond Therapy application is approved',
+    html: `<p>Hi ${t.first_name || 'there'},</p>
+           <p>Good news — your application is approved and you're now visible in our directory.</p>
+           <p>Sign in to your portal: ${PUBLIC_URL}/therapist-portal</p>`
+  }).catch(()=>{});
   res.json({ ok: true });
 });
 
 app.post('/api/admin/therapists/:id/decline', requireAdmin, (req, res) => {
   db.prepare(`UPDATE therapists SET status = 'declined' WHERE id = ?`).run(req.params.id);
+  const t = db.prepare(`SELECT email, first_name FROM therapists WHERE id = ?`).get(req.params.id);
+  if (t?.email) sendEmail({
+    to: t.email,
+    subject: 'Update on your Bond Therapy application',
+    html: `<p>Hi ${t.first_name || 'there'},</p>
+           <p>Unfortunately we're unable to approve your application at this time. If you'd like more information, please reply to this email.</p>`
+  }).catch(()=>{});
   res.json({ ok: true });
 });
 
@@ -910,5 +1201,7 @@ app.listen(PORT, () => {
   if (!process.env.ADMIN_PASS) {
     console.log(`   ⚠  Using default admin password — set ADMIN_PASS in .env!`);
   }
+  console.log(`   Email:      ${EMAIL_ENABLED ? '✓ Resend configured' : '✗ Resend not configured (set RESEND_API_KEY and EMAIL_FROM)'}`);
+  console.log(`   Fee:        ${PLATFORM_FEE_PERCENT}% platform fee on bookings`);
   console.log('');
 });
