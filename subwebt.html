@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Therapist Portal — Bond Therapy</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%232b6cff%22&gt;&lt;path d=%22M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z%22/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -422,6 +423,11 @@ body{
   .session-types,.pay-row,.time-fields{grid-template-columns:1fr}
   .portal-hero h1{font-size:2.6rem}
   .wrap{padding:0 16px 60px}
+  /* Stack the top nav so the brand and the "Already registered?" + "Back to main site" links don't overlap. */
+  .nav{height:auto;flex-direction:column;align-items:stretch;gap:12px;padding:14px 16px}
+  .nav > div:last-child{justify-content:space-between;gap:10px}
+  .back-link{padding:8px 12px;font-size:.82rem}
+  .stepper{overflow-x:auto;padding-bottom:6px}
 }
 </style>
 </head>

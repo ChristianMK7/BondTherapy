@@ -937,7 +937,8 @@ app.get('/api/therapists/me', (req, res) => {
 
 app.get('/api/therapists/me/bookings', requireTherapist, (req, res) => {
   const rows = db.prepare(`
-    SELECT b.id, b.appointment_date, b.time_slot, b.session_type, b.total, b.status, b.created_at,
+    SELECT b.id, b.appointment_date, b.time_slot, b.session_type,
+           b.subtotal, b.platform_fee, b.total, b.status, b.created_at,
            c.first_name AS client_first_name, c.last_name AS client_last_name, c.email AS client_email, c.phone AS client_phone
     FROM bookings b LEFT JOIN clients c ON c.id = b.client_id
     WHERE b.therapist_id = ?

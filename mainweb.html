@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bond Therapy — Lebanon Mental Health Directory</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%232b6cff%22&gt;&lt;path d=%22M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z%22/&gt;&lt;/svg&gt;">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap">
@@ -1247,7 +1248,7 @@
             </div>
             <div class="faq-card reveal">
               <div class="faq-q">What payment methods are accepted?</div>
-              <div class="faq-a">Payments are processed online only via Wish or OMT. No cash payments are accepted at the time of booking.</div>
+              <div class="faq-a">Payments are processed online via Whish Money or OMT. No cash payments are accepted at the time of booking.</div>
             </div>
             <div class="faq-card reveal reveal-delay-1">
               <div class="faq-q">Can I reschedule or cancel?</div>
@@ -1361,7 +1362,8 @@
                 </div>
                 <div>
                   <h4>Email</h4>
-                  <p>jeromekassab256@gmail.com<br><span style="font-size:.8rem">We respond within 24 hours</span></p>
+                  <!-- TODO: replace with your real branded inbox before launch (e.g. hello@yourdomain.com) -->
+                  <p>hello@bondtherapy.com<br><span style="font-size:.8rem">We respond within 24 hours</span></p>
                 </div>
               </div>
               <div class="contact-chip reveal reveal-delay-2">
@@ -1443,8 +1445,8 @@
     <div class="container footer-inner">
       <div class="footer-top">
         <div class="footer-brand">
-          <h3>Mental Health Lebanon</h3>
-          <p>A softer, cleaner directory experience for finding mental health support across Lebanon.</p>
+          <h3>Bond Therapy</h3>
+          <p>Lebanon's mental health directory — a softer, cleaner way to find verified therapists across the country.</p>
           <div class="footer-contact-strip">
             <p><strong style="color:#fff">Contact:</strong> +961 76 594 843 / +961 70 146 300</p>
           </div>
@@ -1470,7 +1472,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>2026 Bond Therapy. All rights reserved. <a href="/privacy" style="color:rgba(234,242,255,.7);margin-left:12px">Privacy</a> <span style="color:rgba(234,242,255,.3);margin:0 6px">·</span> <a href="/terms" style="color:rgba(234,242,255,.7)">Terms</a></p>
+        <p>© 2026 Bond Therapy. All rights reserved. <a href="/privacy" style="color:rgba(234,242,255,.7);margin-left:12px">Privacy</a> <span style="color:rgba(234,242,255,.3);margin:0 6px">·</span> <a href="/terms" style="color:rgba(234,242,255,.7)">Terms</a></p>
         <div class="social-links">
           <a href="#" class="social-link" title="Instagram">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
@@ -1834,8 +1836,11 @@
         const photoOrInitials = t.hasPhoto
           ? `<img src="/api/therapists/${t.id}/photo" alt="${t.name}" style="width:120px;height:120px;border-radius:24px;object-fit:cover;box-shadow:0 8px 24px rgba(22,52,120,.15)">`
           : `<div class="doc-avatar av-1" style="width:120px;height:120px;border-radius:24px;font-size:1.8rem">${t.name.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('')}</div>`;
-        const stars = t.rating ? buildStars(t.rating) : '';
-        const rating = t.rating ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">${stars}<strong>${t.rating.toFixed(1)}</strong><span style="color:var(--muted)">(${t.reviewCount} reviews)</span></div>` : `<div style="margin-top:8px;color:var(--muted);font-size:.9rem">New on Bond Therapy</div>`;
+        const hasRating = t.rating && t.reviewCount > 0;
+        const stars = hasRating ? buildStars(t.rating) : '';
+        const rating = hasRating
+          ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">${stars}<strong>${t.rating.toFixed(1)}</strong><span style="color:var(--muted)">(${t.reviewCount} ${t.reviewCount === 1 ? 'review' : 'reviews'})</span></div>`
+          : `<div style="margin-top:8px;color:var(--muted);font-size:.9rem">New on Bond Therapy — be the first to leave a review</div>`;
         const tags = (arr, label) => (arr && arr.length) ? `
           <div style="margin-top:18px">
             <div style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">${label}</div>
@@ -1898,11 +1903,13 @@
 
     async function loadMyBookings(){
       const list = document.getElementById('myBookingsList');
+      // Wait for the initial auth check so we don't flash a "sign in" prompt at users who are actually signed in.
+      list.innerHTML = `<div style="color:var(--muted);padding:30px;text-align:center">Loading…</div>`;
+      if(_authCheckPromise) { try { await _authCheckPromise; } catch {} }
       if(!currentUser){
-        list.innerHTML = `<div class="empty-results"><h3>Sign in to see your bookings</h3><p>Once you're signed in, your appointments will appear here.</p></div>`;
+        list.innerHTML = `<div class="empty-results"><h3>Sign in to see your bookings</h3><p>Once you're signed in, your appointments will appear here.</p><button class="btn btn-primary" style="margin-top:14px" onclick="openAuthModal('login')">Sign in</button></div>`;
         return;
       }
-      list.innerHTML = `<div style="color:var(--muted);padding:30px;text-align:center">Loading…</div>`;
       try {
         const res = await fetch('/api/clients/me/bookings', { credentials:'include' });
         if(!res.ok){ list.innerHTML = `<div class="empty-results"><h3>Could not load bookings</h3></div>`; return; }
@@ -2179,8 +2186,8 @@
           name: r.name,
           specialty: r.specialty || '—',
           city: r.city || '—',
-          rating: 5.0,
-          reviews: 0,
+          rating: r.rating || null,
+          reviewCount: r.reviewCount || 0,
           languages: r.languages || [],
           bio: r.bio || '',
           avClass: 'av-' + ((i % 6) + 1),
@@ -2225,8 +2232,11 @@
         ? `<img class="doc-avatar-img" src="/api/therapists/${d.id}/photo" alt="${d.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
            <div class="doc-avatar ${d.avClass}" style="display:none">${initials(d.name)}</div>`
         : `<div class="doc-avatar ${d.avClass}">${initials(d.name)}</div>`;
-      const ratingLabel = d.rating ? `${d.rating.toFixed(1)} <span style="color:var(--muted);font-weight:500">(${d.reviewCount})</span>` : '<span style="color:var(--muted)">New</span>';
-      const stars = d.rating ? buildStars(d.rating) : buildStars(0);
+      const hasRating = d.rating && d.reviewCount > 0;
+      const ratingLabel = hasRating
+        ? `${d.rating.toFixed(1)} <span style="color:var(--muted);font-weight:500">(${d.reviewCount})</span>`
+        : '<span style="color:var(--muted);font-weight:600">New on Bond</span>';
+      const stars = hasRating ? buildStars(d.rating) : '';
       return `
         <article class="doc-card" onclick="viewTherapist(${d.id})" style="cursor:pointer">
           <div class="doc-card-header">
@@ -2470,19 +2480,23 @@
     let pendingBooking = false;
 
     let currentTherapist = null;
+    let _authCheckPromise = null;
 
     async function checkAuth(){
-      try {
-        const [clientRes, therapistRes] = await Promise.all([
-          fetch('/api/clients/me', { credentials:'include' }),
-          fetch('/api/therapists/me', { credentials:'include' })
-        ]);
-        const cdata = await clientRes.json();
-        const tdata = await therapistRes.json();
-        currentUser = cdata.loggedIn ? cdata : null;
-        currentTherapist = tdata.loggedIn ? tdata : null;
-      } catch { currentUser = null; currentTherapist = null; }
-      renderAuthState();
+      _authCheckPromise = (async () => {
+        try {
+          const [clientRes, therapistRes] = await Promise.all([
+            fetch('/api/clients/me', { credentials:'include' }),
+            fetch('/api/therapists/me', { credentials:'include' })
+          ]);
+          const cdata = await clientRes.json();
+          const tdata = await therapistRes.json();
+          currentUser = cdata.loggedIn ? cdata : null;
+          currentTherapist = tdata.loggedIn ? tdata : null;
+        } catch { currentUser = null; currentTherapist = null; }
+        renderAuthState();
+      })();
+      await _authCheckPromise;
     }
 
     function getInitials(name, email){

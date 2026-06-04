@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bond Therapy — Therapist Portal</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%232b6cff%22&gt;&lt;path d=%22M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z%22/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
@@ -100,6 +101,12 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
 
 <div class="login-wrap" id="loginWrap">
   <div class="login-card">
+    <a href="/" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:18px">
+      <span class="brand-mark" style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary-2));box-shadow:0 6px 16px rgba(43,108,255,.22)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+      </span>
+      <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--text)">Bond Therapy</span>
+    </a>
     <h1>Therapist Portal</h1>
     <p class="sub">Sign in to track your application and view bookings.</p>
     <label>Email</label>
@@ -110,6 +117,9 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
     <button class="primary" onclick="doLogin()">Sign in</button>
     <div class="links">
       Not registered yet? <a href="/therapist">Submit your application</a>
+    </div>
+    <div class="links" style="margin-top:8px">
+      <a href="/" style="color:var(--muted);font-weight:500">← Back to home</a>
     </div>
   </div>
 </div>
@@ -229,7 +239,8 @@ async function loadBookings() {
             <span>${escapeHtml(b.appointment_date || '—')}</span>
             <span>${escapeHtml(b.time_slot || '—')}</span>
             <span>${escapeHtml(b.session_type || '—')}</span>
-            <span>$${b.total || 0}</span>
+            <span title="What you receive after the platform fee"><strong style="color:var(--green)">$${b.subtotal != null ? b.subtotal : (b.total || 0)} to you</strong></span>
+            ${b.platform_fee ? `<span style="color:var(--muted);font-size:.78rem">Client paid $${b.total}</span>` : ''}
           </div>
           <div class="meta" style="margin-top:6px">
             <span>${escapeHtml(b.client_email || '')}</span>
