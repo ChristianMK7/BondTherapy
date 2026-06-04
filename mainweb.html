@@ -82,6 +82,8 @@
     a { text-decoration: none; color: inherit; }
     img { max-width: 100%; display: block; }
     button, input, select, textarea { font: inherit; }
+    /* Visually hidden but read by screen readers. */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     ::selection { background: rgba(43,108,255,.15); color: var(--accent); }
 
     /* ========================
@@ -900,6 +902,14 @@
       .container { padding: 0 18px; }
       .hero-trust { flex-direction: column; }
       .hero-stats-row { grid-template-columns: 1fr; }
+      /* Keep the primary CTA in every modal reachable without scrolling on small screens. */
+      .modal { padding: 22px 18px 0; }
+      .modal-confirm {
+        position: sticky; bottom: 0;
+        margin: 18px -18px 0; padding: 16px;
+        border-radius: 0;
+        box-shadow: 0 -10px 24px rgba(43,108,255,.18);
+      }
     }
   </style>
 </head>
@@ -1042,21 +1052,11 @@
                 </div>
                 <div>
                   <h3>Care that feels calm and clear</h3>
-                  <p style="font-size:.88rem;color:var(--muted);margin-top:2px">Softer, cleaner. Focus on the specialist.</p>
+                  <p style="font-size:.88rem;color:var(--muted);margin-top:2px">A moment of softness before you choose your specialist.</p>
                 </div>
               </div>
               <div class="quote-carousel">
                 <div class="quote-text" id="quoteText">Healing begins where you feel safe, seen, and supported.</div>
-              </div>
-              <div class="hero-stats-row">
-                <div class="hero-stat">
-                  <strong>Verified profiles</strong>
-                  <span>Licensed and reviewed professionals</span>
-                </div>
-                <div class="hero-stat">
-                  <strong>Online + on-site</strong>
-                  <span>Pick the appointment style you prefer</span>
-                </div>
               </div>
             </div>
           </div>
@@ -1353,7 +1353,7 @@
                 </div>
                 <div>
                   <h4>Phone</h4>
-                  <p>+961 76 594 843<br>+961 70 146 300<br><span style="font-size:.8rem">Available Mon-Sat, 9 AM - 6 PM</span></p>
+                  <p><a id="contactPhone1" href="tel:+96176594843">+961 76 594 843</a><br><a id="contactPhone2" href="tel:+96170146300">+961 70 146 300</a><br><span id="contactHours" style="font-size:.8rem">Available Mon-Sat, 9 AM - 6 PM</span></p>
                 </div>
               </div>
               <div class="contact-chip reveal reveal-delay-1">
@@ -1362,8 +1362,8 @@
                 </div>
                 <div>
                   <h4>Email</h4>
-                  <!-- TODO: replace with your real branded inbox before launch (e.g. hello@yourdomain.com) -->
-                  <p>hello@bondtherapy.com<br><span style="font-size:.8rem">We respond within 24 hours</span></p>
+                  <!-- Updated at runtime from /api/site-info (set CONTACT_EMAIL in .env to override). -->
+                  <p><a id="contactEmail" href="mailto:hello@bondtherapy.com">hello@bondtherapy.com</a><br><span style="font-size:.8rem">We respond within 24 hours</span></p>
                 </div>
               </div>
               <div class="contact-chip reveal reveal-delay-2">
@@ -1372,7 +1372,7 @@
                 </div>
                 <div>
                   <h4>Location</h4>
-                  <p>Beirut, Lebanon<br><span style="font-size:.8rem">Serving all regions across Lebanon</span></p>
+                  <p><span id="contactCity">Beirut, Lebanon</span><br><span id="contactRegion" style="font-size:.8rem">Serving all regions across Lebanon</span></p>
                 </div>
               </div>
             </div>
@@ -1448,7 +1448,7 @@
           <h3>Bond Therapy</h3>
           <p>Lebanon's mental health directory — a softer, cleaner way to find verified therapists across the country.</p>
           <div class="footer-contact-strip">
-            <p><strong style="color:#fff">Contact:</strong> +961 76 594 843 / +961 70 146 300</p>
+            <p><strong style="color:#fff">Contact:</strong> <span id="footerPhones">+961 76 594 843 / +961 70 146 300</span></p>
           </div>
         </div>
         <div class="footer-col">
@@ -1500,23 +1500,23 @@
       <div class="modal-alert">This checkout is for scheduled appointments only. For urgent crises, please use emergency services immediately.</div>
       <div class="modal-grid">
         <div class="modal-full">
-          <span class="modal-label">Selected specialist</span>
+          <label class="modal-label" for="modalDoctor">Selected specialist</label>
           <input class="field-input" id="modalDoctor" type="text" readonly style="background:rgba(246,249,255,.9)"/>
         </div>
         <div>
-          <span class="modal-label">Date</span>
+          <label class="modal-label" for="bookingDate">Date</label>
           <input class="field-input" id="bookingDate" type="date" onchange="onDateChange()"/>
         </div>
         <div>
-          <span class="modal-label">Session type</span>
-          <div class="seg-btns">
+          <span class="modal-label" id="sessionTypeLabel">Session type</span>
+          <div class="seg-btns" role="group" aria-labelledby="sessionTypeLabel">
             <button type="button" id="onlineBtn" class="seg-btn" onclick="setMeetingType('Online')">Online</button>
             <button type="button" id="onsiteBtn" class="seg-btn" onclick="setMeetingType('On-site')">On-site</button>
           </div>
         </div>
         <div class="modal-full">
-          <span class="modal-label">Available time slots</span>
-          <div class="time-slots" id="timeSlots"></div>
+          <span class="modal-label" id="timeSlotsLabel">Available time slots</span>
+          <div class="time-slots" id="timeSlots" role="group" aria-labelledby="timeSlotsLabel"></div>
         </div>
         <div class="modal-full" id="bookedAsRow">
           <span class="modal-label">Booked as</span>
@@ -1555,23 +1555,23 @@
 
       <div class="modal-grid">
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">First name</span>
+          <label class="modal-label" for="auth-first">First name</label>
           <input class="field-input" id="auth-first" type="text" placeholder="Your first name">
         </div>
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">Last name</span>
+          <label class="modal-label" for="auth-last">Last name</label>
           <input class="field-input" id="auth-last" type="text" placeholder="Your last name">
         </div>
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">Phone</span>
+          <label class="modal-label" for="auth-phone">Phone</label>
           <input class="field-input" id="auth-phone" type="tel" placeholder="+961 …">
         </div>
         <div class="modal-full">
-          <span class="modal-label" id="authEmailLabel">Email</span>
+          <label class="modal-label" id="authEmailLabel" for="auth-email">Email</label>
           <input class="field-input" id="auth-email" type="text" placeholder="you@example.com" autocomplete="username">
         </div>
         <div class="modal-full">
-          <span class="modal-label">Password</span>
+          <label class="modal-label" for="auth-pass">Password</label>
           <input class="field-input" id="auth-pass" type="password" placeholder="At least 6 characters" autocomplete="current-password">
         </div>
       </div>
@@ -1598,7 +1598,7 @@
           <div class="section-kicker" style="margin-bottom:10px">Payment</div>
           <div class="modal-title">Pay for your appointment</div>
         </div>
-        <button class="modal-close" onclick="closePayModal()">
+        <button class="modal-close" aria-label="Close payment modal" onclick="closePayModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1615,7 +1615,7 @@
         <div style="color:var(--muted);font-size:.88rem;margin-top:2px" id="payRecipientName"></div>
       </div>
 
-      <span class="modal-label">Transaction reference number</span>
+      <label class="modal-label" for="payRef">Transaction reference number</label>
       <input class="field-input" id="payRef" type="text" placeholder="e.g. WSH-12345678 or OMT receipt number" />
       <p style="font-size:.8rem;color:var(--muted);margin-top:8px">After sending the payment, paste the transaction reference here. Your booking will be confirmed once our team verifies the payment (usually within a few hours).</p>
 
@@ -1632,7 +1632,7 @@
           <div class="section-kicker" style="margin-bottom:10px">Your feedback</div>
           <div class="modal-title" id="reviewTitle">Leave a review</div>
         </div>
-        <button class="modal-close" onclick="closeReviewModal()">
+        <button class="modal-close" aria-label="Close review modal" onclick="closeReviewModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1643,7 +1643,7 @@
           <svg width="36" height="36" viewBox="0 0 24 24" fill="#d1d5db" class="rstar-${n}"><path d="m12 2.5 3 6.1 6.7 1-4.9 4.8 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.9-4.8 6.7-1z"/></svg>
         </button>`).join('')}
       </div>
-      <span class="modal-label">Comment (optional)</span>
+      <label class="modal-label" for="reviewComment">Comment (optional)</label>
       <textarea class="field-input" id="reviewComment" rows="4" placeholder="Tell others what your experience was like…" maxlength="1000" style="resize:vertical"></textarea>
       <div id="reviewErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:14px"></div>
       <button class="modal-confirm" onclick="submitReview()">Submit review</button>
@@ -1658,14 +1658,15 @@
           <div class="section-kicker" style="margin-bottom:10px">Messages</div>
           <div class="modal-title" id="chatTitle">Chat</div>
         </div>
-        <button class="modal-close" onclick="closeChatModal()">
+        <button class="modal-close" aria-label="Close chat" onclick="closeChatModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div id="chatThread" style="background:rgba(43,108,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:200px;max-height:340px;overflow-y:auto;margin:8px 0 14px;display:flex;flex-direction:column;gap:10px">
         <div style="color:var(--muted);text-align:center;font-size:.9rem;padding:40px 0">Loading…</div>
       </div>
-      <textarea class="field-input" id="chatBody" rows="3" placeholder="Type your message…" maxlength="2000" style="resize:vertical"></textarea>
+      <label for="chatBody" class="sr-only">Type your message</label>
+      <textarea class="field-input" id="chatBody" rows="3" placeholder="Type your message…" maxlength="2000" style="resize:vertical" aria-label="Type your message"></textarea>
       <div id="chatErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:10px"></div>
       <button class="modal-confirm" id="chatSend" onclick="sendChatMessage()">Send message</button>
     </div>
@@ -2134,7 +2135,41 @@
 
     /* === DATA === */
     let sortedSpecs = [];
-    const timeSlotsList = ['9:00 AM','10:30 AM','12:00 PM','1:30 PM','3:00 PM','4:30 PM'];
+    const DEFAULT_SLOTS = ['9:00 AM','10:30 AM','12:00 PM','1:30 PM','3:00 PM','4:30 PM'];
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    function parseTimeHHMM(str) {
+      const m = String(str || '').match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      const h = Number(m[1]), mm = Number(m[2]);
+      if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+      return h * 60 + mm;
+    }
+    function fmt12(minutes) {
+      const h = Math.floor(minutes / 60), m = minutes % 60;
+      const period = h >= 12 ? 'PM' : 'AM';
+      const h12 = ((h + 11) % 12) + 1;
+      return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    // Generate slots for the selected doctor. Falls back to DEFAULT_SLOTS when
+    // the therapist hasn't set start/end/duration during signup.
+    function slotsForDoctor(d) {
+      if (!d) return DEFAULT_SLOTS;
+      const start = parseTimeHHMM(d.startTime);
+      const end   = parseTimeHHMM(d.endTime);
+      const dur   = Number(d.duration) || 0;
+      if (start == null || end == null || end <= start || dur < 15) return DEFAULT_SLOTS;
+      const slots = [];
+      // Generate session start times spaced by `dur` until the next slot would end after `end`.
+      for (let t = start; t + dur <= end; t += dur) slots.push(fmt12(t));
+      return slots.length ? slots : DEFAULT_SLOTS;
+    }
+    function isWorkingDay(d, dateStr) {
+      if (!d || !Array.isArray(d.workingDays) || !d.workingDays.length) return true;
+      const day = new Date(dateStr + 'T00:00:00').getDay();
+      return d.workingDays.includes(DAY_NAMES[day]);
+    }
+
     let activeCity='', activeSpecialty='', activeMeeting='', selectedDoctor=null, selectedTime='';
     let bookedSlots = []; // time slots already taken for selected doctor/date
 
@@ -2158,7 +2193,17 @@
     function renderTimeSlots(){
       const wrap = document.getElementById('timeSlots');
       if(!wrap) return;
-      wrap.innerHTML = timeSlotsList.map(t => {
+      const dateVal = document.getElementById('bookingDate')?.value || '';
+      // If the selected date isn't on the therapist's working days, suppress slots entirely.
+      if(dateVal && !isWorkingDay(selectedDoctor, dateVal)){
+        const allowed = selectedDoctor?.workingDays || [];
+        const allowedLabel = allowed.length ? `Available on ${allowed.join(', ')}.` : '';
+        wrap.innerHTML = `<div style="grid-column:1/-1;padding:18px;border-radius:12px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.18);color:#92400e;font-size:.9rem">This therapist isn't available on the selected day. ${allowedLabel} Pick another date.</div>`;
+        if(selectedTime) selectedTime = '';
+        return;
+      }
+      const slots = slotsForDoctor(selectedDoctor);
+      wrap.innerHTML = slots.map(t => {
         const taken = bookedSlots.includes(t);
         const selected = t === selectedTime;
         const cls = 'time-slot' + (taken ? ' taken' : '') + (selected ? ' selected' : '');
@@ -2193,7 +2238,11 @@
           avClass: 'av-' + ((i % 6) + 1),
           onlinePrice: r.onlinePrice ? Number(r.onlinePrice) : 60,
           onsitePrice: r.onsitePrice ? Number(r.onsitePrice) : 80,
-          sessionTypes: r.sessionTypes || ['Online','On-site']
+          sessionTypes: r.sessionTypes || ['Online','On-site'],
+          workingDays: r.workingDays || [],
+          startTime: r.startTime || '',
+          endTime: r.endTime || '',
+          duration: r.duration ? Number(r.duration) : 60
         }));
         populateFilterDropdowns(opts);
       } catch {
@@ -2217,7 +2266,13 @@
       }
     }
 
-    function initials(n){ return n.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join(''); }
+    function initials(n){
+      const stripped = String(n || '').replace(/^\s*(Dr|Mr|Mrs|Ms|Miss|Prof|Sir|Mme|Mlle)\.?\s+/i, '');
+      const parts = stripped.split(/\s+/).filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
     function buildStars(r){
       const full=Math.floor(r), half=r-full>=.5?1:0, empty=5-full-half;
       const s='<svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 3 6.1 6.7 1-4.9 4.8 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.9-4.8 6.7-1z"/></svg>';
@@ -2500,9 +2555,9 @@
     }
 
     function getInitials(name, email){
-      const s = (name || '').trim();
-      if(s){
-        const parts = s.split(/\s+/).filter(Boolean);
+      const stripped = String(name || '').trim().replace(/^(Dr|Mr|Mrs|Ms|Miss|Prof|Sir|Mme|Mlle)\.?\s+/i, '');
+      if(stripped){
+        const parts = stripped.split(/\s+/).filter(Boolean);
         if(parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
         return parts[0].slice(0, 2).toUpperCase();
       }
@@ -2797,6 +2852,34 @@
     })();
     checkAuth();
     loadSpecialists();
+    loadSiteInfo();
+
+    async function loadSiteInfo(){
+      try {
+        const r = await fetch('/api/site-info');
+        if(!r.ok) return;
+        const { contact } = await r.json();
+        if(!contact) return;
+        const set = (id, val, attr) => {
+          const el = document.getElementById(id);
+          if(!el || !val) return;
+          if(attr) el.setAttribute(attr, val);
+          else el.textContent = val;
+        };
+        const phoneHref = p => 'tel:' + String(p).replace(/[^+0-9]/g, '');
+        set('contactPhone1', contact.phone1);
+        set('contactPhone1', phoneHref(contact.phone1), 'href');
+        set('contactPhone2', contact.phone2);
+        set('contactPhone2', phoneHref(contact.phone2), 'href');
+        set('contactHours', contact.hours);
+        set('contactEmail', contact.email);
+        set('contactEmail', 'mailto:' + contact.email, 'href');
+        set('contactCity', contact.city);
+        set('contactRegion', contact.region);
+        const footer = document.getElementById('footerPhones');
+        if(footer && contact.phone1) footer.textContent = `${contact.phone1}${contact.phone2 ? ' / ' + contact.phone2 : ''}`;
+      } catch {}
+    }
   </script>
 </body>
 </html>

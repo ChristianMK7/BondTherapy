@@ -23,6 +23,15 @@ const PAYMENT_INFO = {
   whish: { number: process.env.WHISH_NUMBER || '+961 XX XXX XXX', name: process.env.WHISH_NAME || '' },
   omt:   { number: process.env.OMT_NUMBER   || '+961 XX XXX XXX', name: process.env.OMT_NAME   || '' }
 };
+// Public contact info — surfaced on the contact page + footer.
+const CONTACT_INFO = {
+  phone1:  process.env.CONTACT_PHONE_1  || '+961 76 594 843',
+  phone2:  process.env.CONTACT_PHONE_2  || '+961 70 146 300',
+  hours:   process.env.CONTACT_HOURS    || 'Available Mon-Sat, 9 AM - 6 PM',
+  email:   process.env.CONTACT_EMAIL    || 'hello@bondtherapy.com',
+  city:    process.env.CONTACT_CITY     || 'Beirut, Lebanon',
+  region:  process.env.CONTACT_REGION   || 'Serving all regions across Lebanon'
+};
 
 // ─── EMAIL (Resend) ─────────────────────────────────────────────────────────
 let resendClient = null;
@@ -525,6 +534,11 @@ app.get('/api/payment-info', (req, res) => {
   res.json(PAYMENT_INFO);
 });
 
+// Public site info — contact details surfaced on the home page footer + contact page.
+app.get('/api/site-info', (req, res) => {
+  res.json({ contact: CONTACT_INFO });
+});
+
 // Client submits payment reference for a booking
 app.post('/api/clients/me/bookings/:id/payment', requireClient, (req, res) => {
   const { method, ref } = req.body || {};
@@ -956,7 +970,8 @@ function therapistAggregates(id) {
 app.get('/api/therapists/public', (req, res) => {
   const rows = db.prepare(`
     SELECT id, title_prefix, first_name, last_name, specialty, city, bio, languages,
-           online_price, onsite_price, session_types, focus, approaches, insurance, photo_filename
+           online_price, onsite_price, session_types, focus, approaches, insurance, photo_filename,
+           working_days, start_time, end_time, duration
     FROM therapists WHERE status = 'approved' ORDER BY id DESC
   `).all();
   res.json(rows.map(r => {
@@ -976,7 +991,11 @@ app.get('/api/therapists/public', (req, res) => {
       sessionTypes: parseList(r.session_types),
       hasPhoto: !!r.photo_filename,
       rating: agg.rating,
-      reviewCount: agg.reviews
+      reviewCount: agg.reviews,
+      workingDays: parseList(r.working_days),
+      startTime: r.start_time || '',
+      endTime: r.end_time || '',
+      duration: r.duration || ''
     };
   }));
 });
