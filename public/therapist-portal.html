@@ -117,15 +117,18 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
 <div class="app" id="app">
   <div class="topbar">
     <div class="brand-row">
-      <div class="brand-mark">
+      <a href="/" class="brand-mark" title="Back to Bond Therapy home" aria-label="Bond Therapy home" style="text-decoration:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></svg>
-      </div>
+      </a>
       <div>
         <h1 id="welcomeName">Welcome</h1>
         <p id="welcomeRole">Therapist portal</p>
       </div>
     </div>
-    <button class="btn btn-outline" onclick="doLogout()">Sign out</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="/" class="btn btn-outline" style="text-decoration:none">← Back to home</a>
+      <button class="btn btn-outline" onclick="doLogout()">Sign out</button>
+    </div>
   </div>
 
   <div id="statusBanner"></div>

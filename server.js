@@ -804,6 +804,41 @@ app.get('/api/admin/config', requireAdmin, (req, res) => {
   res.json({ emailEnabled: EMAIL_ENABLED, platformFeePercent: PLATFORM_FEE_PERCENT });
 });
 
+// ─── ADMIN: BOOKING CHATS ───────────────────────────────────────────────────
+// List every booking that has at least one chat message, with the latest one.
+app.get('/api/admin/chats', requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT b.id AS booking_id, b.therapist_name, b.appointment_date, b.time_slot,
+           b.status, b.therapist_id,
+           c.email AS client_email, c.first_name AS client_first_name, c.last_name AS client_last_name,
+           (SELECT COUNT(*) FROM booking_messages WHERE booking_id = b.id) AS message_count,
+           (SELECT body FROM booking_messages WHERE booking_id = b.id ORDER BY id DESC LIMIT 1) AS last_body,
+           (SELECT sender_role FROM booking_messages WHERE booking_id = b.id ORDER BY id DESC LIMIT 1) AS last_sender,
+           (SELECT created_at FROM booking_messages WHERE booking_id = b.id ORDER BY id DESC LIMIT 1) AS last_at
+    FROM bookings b
+    LEFT JOIN clients c ON c.id = b.client_id
+    WHERE EXISTS (SELECT 1 FROM booking_messages WHERE booking_id = b.id)
+    ORDER BY last_at DESC
+  `).all();
+  res.json(rows);
+});
+
+app.get('/api/admin/chats/:bookingId/messages', requireAdmin, (req, res) => {
+  const rows = db.prepare(`SELECT id, sender_role, body, created_at, read_by_client, read_by_therapist FROM booking_messages WHERE booking_id = ? ORDER BY id ASC`).all(req.params.bookingId);
+  res.json(rows);
+});
+
+app.delete('/api/admin/chats/messages/:id', requireAdmin, (req, res) => {
+  const r = db.prepare(`DELETE FROM booking_messages WHERE id = ?`).run(req.params.id);
+  if (!r.changes) return res.status(404).json({ error: 'not_found' });
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/chats/:bookingId', requireAdmin, (req, res) => {
+  db.prepare(`DELETE FROM booking_messages WHERE booking_id = ?`).run(req.params.bookingId);
+  res.json({ ok: true });
+});
+
 // ─── THERAPIST SIGNUP ───────────────────────────────────────────────────────
 app.post('/api/therapists/signup',
   therapistSignupLimiter,
@@ -1048,7 +1083,8 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
     pendingTherapists: db.prepare(`SELECT COUNT(*) AS c FROM therapists WHERE status = 'pending'`).get().c,
     approvedTherapists: db.prepare(`SELECT COUNT(*) AS c FROM therapists WHERE status = 'approved'`).get().c,
     clients: db.prepare(`SELECT COUNT(*) AS c FROM clients`).get().c,
-    pendingResets: db.prepare(`SELECT COUNT(*) AS c FROM password_resets WHERE used = 0 AND approved = 0 AND expires_at > datetime('now')`).get().c
+    pendingResets: db.prepare(`SELECT COUNT(*) AS c FROM password_resets WHERE used = 0 AND approved = 0 AND expires_at > datetime('now')`).get().c,
+    chats: db.prepare(`SELECT COUNT(DISTINCT booking_id) AS c FROM booking_messages`).get().c
   });
 });
 

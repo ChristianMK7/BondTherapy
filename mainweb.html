@@ -956,6 +956,21 @@
           <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
         <button class="btn btn-outline" id="authBtn" onclick="openAuthModal('login')">Sign in</button>
+        <div id="profileWrap" style="display:none;position:relative">
+          <button id="profileBtn" onclick="toggleProfileMenu(event)" aria-label="Account" title="Account menu"
+                  style="width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;font-weight:700;font-size:.95rem;color:#fff;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary-2));box-shadow:0 4px 14px rgba(43,108,255,.25)">
+            <span id="profileInitials">·</span>
+          </button>
+          <div id="profileMenu" style="display:none;position:absolute;top:54px;right:0;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(15,31,58,.12);padding:8px;z-index:60">
+            <div id="profileMenuHeader" style="padding:10px 12px 12px;border-bottom:1px solid var(--line);margin-bottom:6px">
+              <div id="profileMenuName" style="font-weight:700;font-size:.92rem;color:var(--text)"></div>
+              <div id="profileMenuEmail" style="font-size:.78rem;color:var(--muted);margin-top:2px;word-break:break-all"></div>
+            </div>
+            <a id="profileMenuMain" href="#" onclick="navigateTo('bookings');closeProfileMenu();return false;" style="display:block;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text);font-weight:600">My Bookings</a>
+            <a id="profileMenuPortal" href="/therapist-portal" style="display:none;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text);font-weight:600">My Portal</a>
+            <button onclick="doLogout();closeProfileMenu();" style="display:block;width:100%;text-align:left;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--red);font-weight:600;background:none;border:none;cursor:pointer">Sign out</button>
+          </div>
+        </div>
         <button class="btn btn-primary" onclick="navigateTo('find')">Book Now</button>
       </div>
 
@@ -2470,9 +2485,21 @@
       renderAuthState();
     }
 
+    function getInitials(name, email){
+      const s = (name || '').trim();
+      if(s){
+        const parts = s.split(/\s+/).filter(Boolean);
+        if(parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+      const e = (email || '').trim();
+      return e ? e.slice(0, 2).toUpperCase() : '·';
+    }
+
     function renderAuthState(){
       const btn = document.getElementById('authBtn');
       const mobileBtn = document.getElementById('authBtnMobile');
+      const profileWrap = document.getElementById('profileWrap');
       const myBookingsNav = document.getElementById('myBookingsNav');
       if(myBookingsNav) myBookingsNav.style.display = currentUser ? '' : 'none';
 
@@ -2487,14 +2514,47 @@
         if(tLinkMobile){ tLinkMobile.textContent = "I'm a Therapist"; tLinkMobile.setAttribute('href', 'subwebt.html'); }
       }
 
-      if(currentUser){
-        if(btn){ btn.textContent = 'Sign out'; btn.onclick = doLogout; btn.title = currentUser.email; }
-        if(mobileBtn){ mobileBtn.textContent = `Sign out (${currentUser.email})`; mobileBtn.onclick = (e)=>{e.preventDefault();doLogout();toggleMenu();}; }
+      const signedIn = !!(currentUser || currentTherapist);
+      if(signedIn){
+        // Replace Sign in button with the profile circle showing initials.
+        if(btn) btn.style.display = 'none';
+        if(profileWrap) profileWrap.style.display = '';
+        // Prefer the client identity if both are active; otherwise show therapist info.
+        const who = currentUser
+          ? { name: [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' '), email: currentUser.email, role: 'client' }
+          : { name: [currentTherapist.first_name, currentTherapist.last_name].filter(Boolean).join(' '), email: currentTherapist.email, role: 'therapist' };
+        document.getElementById('profileInitials').textContent = getInitials(who.name, who.email);
+        document.getElementById('profileBtn').title = who.email || who.name;
+        document.getElementById('profileMenuName').textContent = who.name || who.email || 'Account';
+        document.getElementById('profileMenuEmail').textContent = who.email || '';
+        // Dropdown links: clients see My Bookings; therapists see My Portal. If both, show both.
+        document.getElementById('profileMenuMain').style.display = currentUser ? 'block' : 'none';
+        document.getElementById('profileMenuPortal').style.display = currentTherapist ? 'block' : 'none';
+        if(mobileBtn){
+          mobileBtn.textContent = `Sign out (${who.email || who.name})`;
+          mobileBtn.onclick = (e)=>{e.preventDefault();doLogout();toggleMenu();};
+        }
       } else {
-        if(btn){ btn.textContent = 'Sign in'; btn.onclick = () => openAuthModal('login'); }
+        if(btn){ btn.style.display = ''; btn.textContent = 'Sign in'; btn.onclick = () => openAuthModal('login'); }
+        if(profileWrap) profileWrap.style.display = 'none';
+        closeProfileMenu();
         if(mobileBtn){ mobileBtn.textContent = 'Sign in'; mobileBtn.onclick = (e)=>{e.preventDefault();openAuthModal('login');toggleMenu();}; }
       }
     }
+
+    function toggleProfileMenu(e){
+      if(e) e.stopPropagation();
+      const m = document.getElementById('profileMenu');
+      m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    }
+    function closeProfileMenu(){
+      const m = document.getElementById('profileMenu');
+      if(m) m.style.display = 'none';
+    }
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('profileWrap');
+      if(wrap && !wrap.contains(e.target)) closeProfileMenu();
+    });
 
     function openAuthModal(mode){
       authMode = mode;
@@ -2596,8 +2656,13 @@
     }
 
     async function doLogout(){
-      await fetch('/api/clients/logout', { method: 'POST', credentials: 'include' });
+      // Sign out of every active session (client and/or therapist).
+      const calls = [];
+      if(currentUser) calls.push(fetch('/api/clients/logout', { method: 'POST', credentials: 'include' }));
+      if(currentTherapist) calls.push(fetch('/api/therapists/logout', { method: 'POST', credentials: 'include' }));
+      try { await Promise.all(calls); } catch {}
       currentUser = null;
+      currentTherapist = null;
       renderAuthState();
       showToast('Signed out.');
     }
