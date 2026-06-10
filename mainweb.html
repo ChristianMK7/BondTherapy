@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bond Therapy — Lebanon Mental Health Directory</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%232b6cff%22&gt;&lt;path d=%22M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z%22/&gt;&lt;/svg&gt;">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap">
@@ -81,6 +82,8 @@
     a { text-decoration: none; color: inherit; }
     img { max-width: 100%; display: block; }
     button, input, select, textarea { font: inherit; }
+    /* Visually hidden but read by screen readers. */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     ::selection { background: rgba(43,108,255,.15); color: var(--accent); }
 
     /* ========================
@@ -899,6 +902,14 @@
       .container { padding: 0 18px; }
       .hero-trust { flex-direction: column; }
       .hero-stats-row { grid-template-columns: 1fr; }
+      /* Keep the primary CTA in every modal reachable without scrolling on small screens. */
+      .modal { padding: 22px 18px 0; }
+      .modal-confirm {
+        position: sticky; bottom: 0;
+        margin: 18px -18px 0; padding: 16px;
+        border-radius: 0;
+        box-shadow: 0 -10px 24px rgba(43,108,255,.18);
+      }
     }
   </style>
 </head>
@@ -948,7 +959,7 @@
         <li><a href="#" onclick="navigateTo('faq');return false;" data-page="faq">FAQ</a></li>
         <li><a href="#" onclick="navigateTo('contact');return false;" data-page="contact">Contact</a></li>
         <li id="myBookingsNav" style="display:none"><a href="#" onclick="navigateTo('bookings');return false;" data-page="bookings">My Bookings</a></li>
-        <li><a href="subwebt.html" class="nav-therapist-link">I'm a Therapist</a></li>
+        <li id="therapistNav"><a href="subwebt.html" id="therapistNavLink" class="nav-therapist-link">I'm a Therapist</a></li>
       </ul>
 
       <div class="nav-actions" id="navActions">
@@ -956,6 +967,21 @@
           <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
         <button class="btn btn-outline" id="authBtn" onclick="openAuthModal('login')">Sign in</button>
+        <div id="profileWrap" style="display:none;position:relative">
+          <button id="profileBtn" onclick="toggleProfileMenu(event)" aria-label="Account" title="Account menu"
+                  style="width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;font-weight:700;font-size:.95rem;color:#fff;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary-2));box-shadow:0 4px 14px rgba(43,108,255,.25)">
+            <span id="profileInitials">·</span>
+          </button>
+          <div id="profileMenu" style="display:none;position:absolute;top:54px;right:0;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(15,31,58,.12);padding:8px;z-index:60">
+            <div id="profileMenuHeader" style="padding:10px 12px 12px;border-bottom:1px solid var(--line);margin-bottom:6px">
+              <div id="profileMenuName" style="font-weight:700;font-size:.92rem;color:var(--text)"></div>
+              <div id="profileMenuEmail" style="font-size:.78rem;color:var(--muted);margin-top:2px;word-break:break-all"></div>
+            </div>
+            <a id="profileMenuMain" href="#" onclick="navigateTo('bookings');closeProfileMenu();return false;" style="display:block;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text);font-weight:600">My Bookings</a>
+            <a id="profileMenuPortal" href="/therapist-portal" style="display:none;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text);font-weight:600">My Portal</a>
+            <button onclick="doLogout();closeProfileMenu();" style="display:block;width:100%;text-align:left;padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--red);font-weight:600;background:none;border:none;cursor:pointer">Sign out</button>
+          </div>
+        </div>
         <button class="btn btn-primary" onclick="navigateTo('find')">Book Now</button>
       </div>
 
@@ -970,7 +996,7 @@
       <a href="#" onclick="navigateTo('blog');toggleMenu();return false;">Blog</a>
       <a href="#" onclick="navigateTo('faq');toggleMenu();return false;">FAQ</a>
       <a href="#" onclick="navigateTo('contact');toggleMenu();return false;">Contact</a>
-      <a href="subwebt.html" style="color:var(--primary-2);font-weight:600">I'm a Therapist</a>
+      <a href="subwebt.html" id="therapistNavLinkMobile" style="color:var(--primary-2);font-weight:600">I'm a Therapist</a>
       <a href="#" id="authBtnMobile" onclick="openAuthModal('login');toggleMenu();return false;">Sign in</a>
       <div style="padding:16px 0 4px"><button class="btn btn-primary" style="width:100%" onclick="navigateTo('find');toggleMenu()">Book Now</button></div>
     </div>
@@ -1026,21 +1052,11 @@
                 </div>
                 <div>
                   <h3>Care that feels calm and clear</h3>
-                  <p style="font-size:.88rem;color:var(--muted);margin-top:2px">Softer, cleaner. Focus on the specialist.</p>
+                  <p style="font-size:.88rem;color:var(--muted);margin-top:2px">A moment of softness before you choose your specialist.</p>
                 </div>
               </div>
               <div class="quote-carousel">
                 <div class="quote-text" id="quoteText">Healing begins where you feel safe, seen, and supported.</div>
-              </div>
-              <div class="hero-stats-row">
-                <div class="hero-stat">
-                  <strong>Verified profiles</strong>
-                  <span>Licensed and reviewed professionals</span>
-                </div>
-                <div class="hero-stat">
-                  <strong>Online + on-site</strong>
-                  <span>Pick the appointment style you prefer</span>
-                </div>
               </div>
             </div>
           </div>
@@ -1232,7 +1248,7 @@
             </div>
             <div class="faq-card reveal">
               <div class="faq-q">What payment methods are accepted?</div>
-              <div class="faq-a">Payments are processed online only via Wish or OMT. No cash payments are accepted at the time of booking.</div>
+              <div class="faq-a">Payments are processed online via Whish Money or OMT. No cash payments are accepted at the time of booking.</div>
             </div>
             <div class="faq-card reveal reveal-delay-1">
               <div class="faq-q">Can I reschedule or cancel?</div>
@@ -1337,7 +1353,7 @@
                 </div>
                 <div>
                   <h4>Phone</h4>
-                  <p>+961 76 594 843<br>+961 70 146 300<br><span style="font-size:.8rem">Available Mon-Sat, 9 AM - 6 PM</span></p>
+                  <p><a id="contactPhone1" href="tel:+96176594843">+961 76 594 843</a><br><a id="contactPhone2" href="tel:+96170146300">+961 70 146 300</a><br><span id="contactHours" style="font-size:.8rem">Available Mon-Sat, 9 AM - 6 PM</span></p>
                 </div>
               </div>
               <div class="contact-chip reveal reveal-delay-1">
@@ -1346,7 +1362,8 @@
                 </div>
                 <div>
                   <h4>Email</h4>
-                  <p>jeromekassab256@gmail.com<br><span style="font-size:.8rem">We respond within 24 hours</span></p>
+                  <!-- Updated at runtime from /api/site-info (set CONTACT_EMAIL in .env to override). -->
+                  <p><a id="contactEmail" href="mailto:hello@bondtherapy.com">hello@bondtherapy.com</a><br><span style="font-size:.8rem">We respond within 24 hours</span></p>
                 </div>
               </div>
               <div class="contact-chip reveal reveal-delay-2">
@@ -1355,7 +1372,7 @@
                 </div>
                 <div>
                   <h4>Location</h4>
-                  <p>Beirut, Lebanon<br><span style="font-size:.8rem">Serving all regions across Lebanon</span></p>
+                  <p><span id="contactCity">Beirut, Lebanon</span><br><span id="contactRegion" style="font-size:.8rem">Serving all regions across Lebanon</span></p>
                 </div>
               </div>
             </div>
@@ -1428,10 +1445,10 @@
     <div class="container footer-inner">
       <div class="footer-top">
         <div class="footer-brand">
-          <h3>Mental Health Lebanon</h3>
-          <p>A softer, cleaner directory experience for finding mental health support across Lebanon.</p>
+          <h3>Bond Therapy</h3>
+          <p>Lebanon's mental health directory — a softer, cleaner way to find verified therapists across the country.</p>
           <div class="footer-contact-strip">
-            <p><strong style="color:#fff">Contact:</strong> +961 76 594 843 / +961 70 146 300</p>
+            <p><strong style="color:#fff">Contact:</strong> <span id="footerPhones">+961 76 594 843 / +961 70 146 300</span></p>
           </div>
         </div>
         <div class="footer-col">
@@ -1455,7 +1472,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>2026 Bond Therapy. All rights reserved. <a href="/privacy" style="color:rgba(234,242,255,.7);margin-left:12px">Privacy</a> <span style="color:rgba(234,242,255,.3);margin:0 6px">·</span> <a href="/terms" style="color:rgba(234,242,255,.7)">Terms</a></p>
+        <p>© 2026 Bond Therapy. All rights reserved. <a href="/privacy" style="color:rgba(234,242,255,.7);margin-left:12px">Privacy</a> <span style="color:rgba(234,242,255,.3);margin:0 6px">·</span> <a href="/terms" style="color:rgba(234,242,255,.7)">Terms</a></p>
         <div class="social-links">
           <a href="#" class="social-link" title="Instagram">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
@@ -1483,23 +1500,23 @@
       <div class="modal-alert">This checkout is for scheduled appointments only. For urgent crises, please use emergency services immediately.</div>
       <div class="modal-grid">
         <div class="modal-full">
-          <span class="modal-label">Selected specialist</span>
+          <label class="modal-label" for="modalDoctor">Selected specialist</label>
           <input class="field-input" id="modalDoctor" type="text" readonly style="background:rgba(246,249,255,.9)"/>
         </div>
         <div>
-          <span class="modal-label">Date</span>
+          <label class="modal-label" for="bookingDate">Date</label>
           <input class="field-input" id="bookingDate" type="date" onchange="onDateChange()"/>
         </div>
         <div>
-          <span class="modal-label">Session type</span>
-          <div class="seg-btns">
+          <span class="modal-label" id="sessionTypeLabel">Session type</span>
+          <div class="seg-btns" role="group" aria-labelledby="sessionTypeLabel">
             <button type="button" id="onlineBtn" class="seg-btn" onclick="setMeetingType('Online')">Online</button>
             <button type="button" id="onsiteBtn" class="seg-btn" onclick="setMeetingType('On-site')">On-site</button>
           </div>
         </div>
         <div class="modal-full">
-          <span class="modal-label">Available time slots</span>
-          <div class="time-slots" id="timeSlots"></div>
+          <span class="modal-label" id="timeSlotsLabel">Available time slots</span>
+          <div class="time-slots" id="timeSlots" role="group" aria-labelledby="timeSlotsLabel"></div>
         </div>
         <div class="modal-full" id="bookedAsRow">
           <span class="modal-label">Booked as</span>
@@ -1514,6 +1531,8 @@
         <div class="summary-row"><span>Specialist</span><strong id="sumDoctor">—</strong></div>
         <div class="summary-row"><span>Time</span><strong id="sumTime">—</strong></div>
         <div class="summary-row"><span>Type</span><strong id="sumType">—</strong></div>
+        <div class="summary-row"><span>Session price</span><strong id="sumSubtotal">$60</strong></div>
+        <div class="summary-row" id="sumFeeRow" style="display:none"><span id="sumFeeLabel">Platform fee</span><strong id="sumFee">$0</strong></div>
         <div class="summary-row summary-total"><span>Total</span><strong id="sumTotal">$60</strong></div>
       </div>
       <button class="modal-confirm" onclick="confirmBooking()">Confirm appointment</button>
@@ -1536,23 +1555,23 @@
 
       <div class="modal-grid">
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">First name</span>
+          <label class="modal-label" for="auth-first">First name</label>
           <input class="field-input" id="auth-first" type="text" placeholder="Your first name">
         </div>
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">Last name</span>
+          <label class="modal-label" for="auth-last">Last name</label>
           <input class="field-input" id="auth-last" type="text" placeholder="Your last name">
         </div>
         <div class="modal-full auth-signup-only" style="display:none">
-          <span class="modal-label">Phone</span>
+          <label class="modal-label" for="auth-phone">Phone</label>
           <input class="field-input" id="auth-phone" type="tel" placeholder="+961 …">
         </div>
         <div class="modal-full">
-          <span class="modal-label">Email</span>
-          <input class="field-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
+          <label class="modal-label" id="authEmailLabel" for="auth-email">Email</label>
+          <input class="field-input" id="auth-email" type="text" placeholder="you@example.com" autocomplete="username">
         </div>
         <div class="modal-full">
-          <span class="modal-label">Password</span>
+          <label class="modal-label" for="auth-pass">Password</label>
           <input class="field-input" id="auth-pass" type="password" placeholder="At least 6 characters" autocomplete="current-password">
         </div>
       </div>
@@ -1579,7 +1598,7 @@
           <div class="section-kicker" style="margin-bottom:10px">Payment</div>
           <div class="modal-title">Pay for your appointment</div>
         </div>
-        <button class="modal-close" onclick="closePayModal()">
+        <button class="modal-close" aria-label="Close payment modal" onclick="closePayModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1596,7 +1615,7 @@
         <div style="color:var(--muted);font-size:.88rem;margin-top:2px" id="payRecipientName"></div>
       </div>
 
-      <span class="modal-label">Transaction reference number</span>
+      <label class="modal-label" for="payRef">Transaction reference number</label>
       <input class="field-input" id="payRef" type="text" placeholder="e.g. WSH-12345678 or OMT receipt number" />
       <p style="font-size:.8rem;color:var(--muted);margin-top:8px">After sending the payment, paste the transaction reference here. Your booking will be confirmed once our team verifies the payment (usually within a few hours).</p>
 
@@ -1613,7 +1632,7 @@
           <div class="section-kicker" style="margin-bottom:10px">Your feedback</div>
           <div class="modal-title" id="reviewTitle">Leave a review</div>
         </div>
-        <button class="modal-close" onclick="closeReviewModal()">
+        <button class="modal-close" aria-label="Close review modal" onclick="closeReviewModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1624,10 +1643,32 @@
           <svg width="36" height="36" viewBox="0 0 24 24" fill="#d1d5db" class="rstar-${n}"><path d="m12 2.5 3 6.1 6.7 1-4.9 4.8 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.9-4.8 6.7-1z"/></svg>
         </button>`).join('')}
       </div>
-      <span class="modal-label">Comment (optional)</span>
+      <label class="modal-label" for="reviewComment">Comment (optional)</label>
       <textarea class="field-input" id="reviewComment" rows="4" placeholder="Tell others what your experience was like…" maxlength="1000" style="resize:vertical"></textarea>
       <div id="reviewErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:14px"></div>
       <button class="modal-confirm" onclick="submitReview()">Submit review</button>
+    </div>
+  </div>
+
+  <!-- CHAT MODAL -->
+  <div class="modal-overlay" id="chatOverlay" onclick="if(event.target===this)closeChatModal()">
+    <div class="modal" style="max-width:520px;display:flex;flex-direction:column" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <div class="section-kicker" style="margin-bottom:10px">Messages</div>
+          <div class="modal-title" id="chatTitle">Chat</div>
+        </div>
+        <button class="modal-close" aria-label="Close chat" onclick="closeChatModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="chatThread" style="background:rgba(43,108,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:200px;max-height:340px;overflow-y:auto;margin:8px 0 14px;display:flex;flex-direction:column;gap:10px">
+        <div style="color:var(--muted);text-align:center;font-size:.9rem;padding:40px 0">Loading…</div>
+      </div>
+      <label for="chatBody" class="sr-only">Type your message</label>
+      <textarea class="field-input" id="chatBody" rows="3" placeholder="Type your message…" maxlength="2000" style="resize:vertical" aria-label="Type your message"></textarea>
+      <div id="chatErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:10px"></div>
+      <button class="modal-confirm" id="chatSend" onclick="sendChatMessage()">Send message</button>
     </div>
   </div>
 
@@ -1796,8 +1837,11 @@
         const photoOrInitials = t.hasPhoto
           ? `<img src="/api/therapists/${t.id}/photo" alt="${t.name}" style="width:120px;height:120px;border-radius:24px;object-fit:cover;box-shadow:0 8px 24px rgba(22,52,120,.15)">`
           : `<div class="doc-avatar av-1" style="width:120px;height:120px;border-radius:24px;font-size:1.8rem">${t.name.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('')}</div>`;
-        const stars = t.rating ? buildStars(t.rating) : '';
-        const rating = t.rating ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">${stars}<strong>${t.rating.toFixed(1)}</strong><span style="color:var(--muted)">(${t.reviewCount} reviews)</span></div>` : `<div style="margin-top:8px;color:var(--muted);font-size:.9rem">New on Bond Therapy</div>`;
+        const hasRating = t.rating && t.reviewCount > 0;
+        const stars = hasRating ? buildStars(t.rating) : '';
+        const rating = hasRating
+          ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">${stars}<strong>${t.rating.toFixed(1)}</strong><span style="color:var(--muted)">(${t.reviewCount} ${t.reviewCount === 1 ? 'review' : 'reviews'})</span></div>`
+          : `<div style="margin-top:8px;color:var(--muted);font-size:.9rem">New on Bond Therapy — be the first to leave a review</div>`;
         const tags = (arr, label) => (arr && arr.length) ? `
           <div style="margin-top:18px">
             <div style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">${label}</div>
@@ -1860,11 +1904,13 @@
 
     async function loadMyBookings(){
       const list = document.getElementById('myBookingsList');
+      // Wait for the initial auth check so we don't flash a "sign in" prompt at users who are actually signed in.
+      list.innerHTML = `<div style="color:var(--muted);padding:30px;text-align:center">Loading…</div>`;
+      if(_authCheckPromise) { try { await _authCheckPromise; } catch {} }
       if(!currentUser){
-        list.innerHTML = `<div class="empty-results"><h3>Sign in to see your bookings</h3><p>Once you're signed in, your appointments will appear here.</p></div>`;
+        list.innerHTML = `<div class="empty-results"><h3>Sign in to see your bookings</h3><p>Once you're signed in, your appointments will appear here.</p><button class="btn btn-primary" style="margin-top:14px" onclick="openAuthModal('login')">Sign in</button></div>`;
         return;
       }
-      list.innerHTML = `<div style="color:var(--muted);padding:30px;text-align:center">Loading…</div>`;
       try {
         const res = await fetch('/api/clients/me/bookings', { credentials:'include' });
         if(!res.ok){ list.innerHTML = `<div class="empty-results"><h3>Could not load bookings</h3></div>`; return; }
@@ -1902,6 +1948,7 @@
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
                 ${canPay ? `<button class="btn btn-primary" onclick="openPayModal(${b.id}, ${b.total || 0})">Pay now</button>` : ''}
+                <button class="btn btn-outline" onclick="openChatModal(${b.id}, '${escapeAttr(b.therapist_name)}', 'client')">Messages</button>
                 ${canReview ? `<button class="btn btn-ghost" onclick="openReviewModal(${b.id}, '${escapeAttr(b.therapist_name)}')">Leave review</button>` : ''}
                 ${status !== 'cancelled' ? `<button class="btn btn-outline" onclick="cancelBooking(${b.id})">Cancel</button>` : ''}
               </div>
@@ -2014,9 +2061,115 @@
 
     function escapeHtml(s){ if(s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+    /* === CHAT === */
+    let chatBookingId = null, chatRole = 'client';
+    function openChatModal(bookingId, otherName, role){
+      chatBookingId = bookingId;
+      chatRole = role || 'client';
+      document.getElementById('chatTitle').textContent = role === 'therapist' ? `Chat with ${otherName}` : `Messages with ${otherName}`;
+      document.getElementById('chatBody').value = '';
+      document.getElementById('chatErr').style.display = 'none';
+      document.getElementById('chatOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      loadChatMessages();
+    }
+    function closeChatModal(){
+      document.getElementById('chatOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      chatBookingId = null;
+    }
+    async function loadChatMessages(){
+      if(!chatBookingId) return;
+      const url = chatRole === 'therapist'
+        ? `/api/therapists/me/bookings/${chatBookingId}/messages`
+        : `/api/clients/me/bookings/${chatBookingId}/messages`;
+      const thread = document.getElementById('chatThread');
+      try {
+        const r = await fetch(url, { credentials:'include' });
+        if(!r.ok){ thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0">Could not load messages.</div>`; return; }
+        const rows = await r.json();
+        if(!rows.length){
+          thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:.9rem">No messages yet. Start the conversation below.</div>`;
+          return;
+        }
+        thread.innerHTML = rows.map(m => {
+          const mine = m.sender_role === chatRole;
+          const bubble = mine
+            ? `background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px`
+            : `background:#fff;color:var(--text);align-self:flex-start;border:1px solid var(--line);border-bottom-left-radius:4px`;
+          const label = mine ? 'You' : (m.sender_role === 'therapist' ? 'Therapist' : (m.sender_role === 'client' ? 'Client' : 'Admin'));
+          return `
+            <div style="max-width:80%;${bubble};padding:10px 14px;border-radius:14px;font-size:.92rem;line-height:1.45;word-wrap:break-word;white-space:pre-wrap">
+              <div style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-bottom:4px">${label} · ${(m.created_at||'').replace('T',' ').slice(0,16)}</div>
+              ${escapeHtml(m.body)}
+            </div>`;
+        }).join('');
+        thread.scrollTop = thread.scrollHeight;
+      } catch {
+        thread.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0">Network error.</div>`;
+      }
+    }
+    async function sendChatMessage(){
+      const body = document.getElementById('chatBody').value.trim();
+      const err = document.getElementById('chatErr');
+      err.style.display = 'none';
+      if(!body){ err.textContent = 'Please write a message first.'; err.style.display='block'; return; }
+      const btn = document.getElementById('chatSend');
+      btn.disabled = true;
+      try {
+        const url = chatRole === 'therapist'
+          ? `/api/therapists/me/bookings/${chatBookingId}/messages`
+          : `/api/clients/me/bookings/${chatBookingId}/messages`;
+        const r = await fetch(url, {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ body })
+        });
+        if(!r.ok){ err.textContent = 'Could not send. Try again.'; err.style.display='block'; return; }
+        document.getElementById('chatBody').value = '';
+        await loadChatMessages();
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     /* === DATA === */
     let sortedSpecs = [];
-    const timeSlotsList = ['9:00 AM','10:30 AM','12:00 PM','1:30 PM','3:00 PM','4:30 PM'];
+    const DEFAULT_SLOTS = ['9:00 AM','10:30 AM','12:00 PM','1:30 PM','3:00 PM','4:30 PM'];
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    function parseTimeHHMM(str) {
+      const m = String(str || '').match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      const h = Number(m[1]), mm = Number(m[2]);
+      if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+      return h * 60 + mm;
+    }
+    function fmt12(minutes) {
+      const h = Math.floor(minutes / 60), m = minutes % 60;
+      const period = h >= 12 ? 'PM' : 'AM';
+      const h12 = ((h + 11) % 12) + 1;
+      return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    // Generate slots for the selected doctor. Falls back to DEFAULT_SLOTS when
+    // the therapist hasn't set start/end/duration during signup.
+    function slotsForDoctor(d) {
+      if (!d) return DEFAULT_SLOTS;
+      const start = parseTimeHHMM(d.startTime);
+      const end   = parseTimeHHMM(d.endTime);
+      const dur   = Number(d.duration) || 0;
+      if (start == null || end == null || end <= start || dur < 15) return DEFAULT_SLOTS;
+      const slots = [];
+      // Generate session start times spaced by `dur` until the next slot would end after `end`.
+      for (let t = start; t + dur <= end; t += dur) slots.push(fmt12(t));
+      return slots.length ? slots : DEFAULT_SLOTS;
+    }
+    function isWorkingDay(d, dateStr) {
+      if (!d || !Array.isArray(d.workingDays) || !d.workingDays.length) return true;
+      const day = new Date(dateStr + 'T00:00:00').getDay();
+      return d.workingDays.includes(DAY_NAMES[day]);
+    }
+
     let activeCity='', activeSpecialty='', activeMeeting='', selectedDoctor=null, selectedTime='';
     let bookedSlots = []; // time slots already taken for selected doctor/date
 
@@ -2040,7 +2193,17 @@
     function renderTimeSlots(){
       const wrap = document.getElementById('timeSlots');
       if(!wrap) return;
-      wrap.innerHTML = timeSlotsList.map(t => {
+      const dateVal = document.getElementById('bookingDate')?.value || '';
+      // If the selected date isn't on the therapist's working days, suppress slots entirely.
+      if(dateVal && !isWorkingDay(selectedDoctor, dateVal)){
+        const allowed = selectedDoctor?.workingDays || [];
+        const allowedLabel = allowed.length ? `Available on ${allowed.join(', ')}.` : '';
+        wrap.innerHTML = `<div style="grid-column:1/-1;padding:18px;border-radius:12px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.18);color:#92400e;font-size:.9rem">This therapist isn't available on the selected day. ${allowedLabel} Pick another date.</div>`;
+        if(selectedTime) selectedTime = '';
+        return;
+      }
+      const slots = slotsForDoctor(selectedDoctor);
+      wrap.innerHTML = slots.map(t => {
         const taken = bookedSlots.includes(t);
         const selected = t === selectedTime;
         const cls = 'time-slot' + (taken ? ' taken' : '') + (selected ? ' selected' : '');
@@ -2068,14 +2231,18 @@
           name: r.name,
           specialty: r.specialty || '—',
           city: r.city || '—',
-          rating: 5.0,
-          reviews: 0,
+          rating: r.rating || null,
+          reviewCount: r.reviewCount || 0,
           languages: r.languages || [],
           bio: r.bio || '',
           avClass: 'av-' + ((i % 6) + 1),
           onlinePrice: r.onlinePrice ? Number(r.onlinePrice) : 60,
           onsitePrice: r.onsitePrice ? Number(r.onsitePrice) : 80,
-          sessionTypes: r.sessionTypes || ['Online','On-site']
+          sessionTypes: r.sessionTypes || ['Online','On-site'],
+          workingDays: r.workingDays || [],
+          startTime: r.startTime || '',
+          endTime: r.endTime || '',
+          duration: r.duration ? Number(r.duration) : 60
         }));
         populateFilterDropdowns(opts);
       } catch {
@@ -2099,7 +2266,13 @@
       }
     }
 
-    function initials(n){ return n.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join(''); }
+    function initials(n){
+      const stripped = String(n || '').replace(/^\s*(Dr|Mr|Mrs|Ms|Miss|Prof|Sir|Mme|Mlle)\.?\s+/i, '');
+      const parts = stripped.split(/\s+/).filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
     function buildStars(r){
       const full=Math.floor(r), half=r-full>=.5?1:0, empty=5-full-half;
       const s='<svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 3 6.1 6.7 1-4.9 4.8 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.9-4.8 6.7-1z"/></svg>';
@@ -2114,8 +2287,11 @@
         ? `<img class="doc-avatar-img" src="/api/therapists/${d.id}/photo" alt="${d.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
            <div class="doc-avatar ${d.avClass}" style="display:none">${initials(d.name)}</div>`
         : `<div class="doc-avatar ${d.avClass}">${initials(d.name)}</div>`;
-      const ratingLabel = d.rating ? `${d.rating.toFixed(1)} <span style="color:var(--muted);font-weight:500">(${d.reviewCount})</span>` : '<span style="color:var(--muted)">New</span>';
-      const stars = d.rating ? buildStars(d.rating) : buildStars(0);
+      const hasRating = d.rating && d.reviewCount > 0;
+      const ratingLabel = hasRating
+        ? `${d.rating.toFixed(1)} <span style="color:var(--muted);font-weight:500">(${d.reviewCount})</span>`
+        : '<span style="color:var(--muted);font-weight:600">New on Bond</span>';
+      const stars = hasRating ? buildStars(d.rating) : '';
       return `
         <article class="doc-card" onclick="viewTherapist(${d.id})" style="cursor:pointer">
           <div class="doc-card-header">
@@ -2247,18 +2423,54 @@
       document.getElementById('specialists').scrollIntoView({ behavior:'smooth', block:'start' });
     }
 
-    function currentBookingPrice(){
+    let _platformFeePercent = null; // cached after first /api/pricing/quote call
+
+    function currentSubtotal(){
       if(!selectedDoctor) return 60;
       if(activeMeeting === 'On-site') return selectedDoctor.onsitePrice || 80;
       if(activeMeeting === 'Online')  return selectedDoctor.onlinePrice || 60;
       return selectedDoctor.onlinePrice || selectedDoctor.onsitePrice || 60;
+    }
+    // Subtotal + fee, computed locally once we know the fee %. If we don't have
+    // the rate yet, fall back to the subtotal and let the server's response correct it.
+    function currentBookingPrice(){
+      const sub = currentSubtotal();
+      if(_platformFeePercent == null) return sub;
+      return sub + Math.round(sub * _platformFeePercent / 100);
+    }
+    function currentPlatformFee(){
+      const sub = currentSubtotal();
+      if(_platformFeePercent == null) return 0;
+      return Math.round(sub * _platformFeePercent / 100);
+    }
+
+    async function ensureFeePercent(){
+      if(_platformFeePercent != null) return;
+      try {
+        const r = await fetch('/api/pricing/quote?subtotal=100');
+        if(r.ok){
+          const d = await r.json();
+          _platformFeePercent = Number(d.feePercent) || 0;
+        } else _platformFeePercent = 0;
+      } catch { _platformFeePercent = 0; }
     }
 
     function syncSummary(){
       document.getElementById('sumDoctor').textContent = selectedDoctor ? selectedDoctor.name : '—';
       document.getElementById('sumTime').textContent = selectedTime || '—';
       document.getElementById('sumType').textContent = activeMeeting || '—';
-      document.getElementById('sumTotal').textContent = '$' + currentBookingPrice();
+      const sub = currentSubtotal();
+      const fee = currentPlatformFee();
+      document.getElementById('sumSubtotal').textContent = '$' + sub;
+      const feeRow = document.getElementById('sumFeeRow');
+      if(fee > 0){
+        feeRow.style.display = '';
+        document.getElementById('sumFeeLabel').textContent = `Platform fee (${_platformFeePercent}%)`;
+        document.getElementById('sumFee').textContent = '$' + fee;
+      } else {
+        feeRow.style.display = 'none';
+      }
+      document.getElementById('sumTotal').textContent = '$' + (sub + fee);
     }
 
     function setMeetingType(t){
@@ -2272,6 +2484,7 @@
       selectedDoctor = sortedSpecs.find(d => d.id===id);
       if(!selectedDoctor){ showToast('Therapist not found.'); return; }
       selectedTime=''; activeMeeting=''; bookedSlots = [];
+      ensureFeePercent().then(syncSummary);
       document.getElementById('modalDoctor').value = `${selectedDoctor.name} — ${selectedDoctor.specialty}, ${selectedDoctor.city}`;
       const dateInput = document.getElementById('bookingDate');
       dateInput.min = todayISO();
@@ -2321,28 +2534,96 @@
     let authMode = 'login';
     let pendingBooking = false;
 
+    let currentTherapist = null;
+    let _authCheckPromise = null;
+
     async function checkAuth(){
-      try {
-        const res = await fetch('/api/clients/me', { credentials:'include' });
-        const data = await res.json();
-        currentUser = data.loggedIn ? data : null;
-      } catch { currentUser = null; }
-      renderAuthState();
+      _authCheckPromise = (async () => {
+        try {
+          const [clientRes, therapistRes] = await Promise.all([
+            fetch('/api/clients/me', { credentials:'include' }),
+            fetch('/api/therapists/me', { credentials:'include' })
+          ]);
+          const cdata = await clientRes.json();
+          const tdata = await therapistRes.json();
+          currentUser = cdata.loggedIn ? cdata : null;
+          currentTherapist = tdata.loggedIn ? tdata : null;
+        } catch { currentUser = null; currentTherapist = null; }
+        renderAuthState();
+      })();
+      await _authCheckPromise;
+    }
+
+    function getInitials(name, email){
+      const stripped = String(name || '').trim().replace(/^(Dr|Mr|Mrs|Ms|Miss|Prof|Sir|Mme|Mlle)\.?\s+/i, '');
+      if(stripped){
+        const parts = stripped.split(/\s+/).filter(Boolean);
+        if(parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+      const e = (email || '').trim();
+      return e ? e.slice(0, 2).toUpperCase() : '·';
     }
 
     function renderAuthState(){
       const btn = document.getElementById('authBtn');
       const mobileBtn = document.getElementById('authBtnMobile');
+      const profileWrap = document.getElementById('profileWrap');
       const myBookingsNav = document.getElementById('myBookingsNav');
       if(myBookingsNav) myBookingsNav.style.display = currentUser ? '' : 'none';
-      if(currentUser){
-        if(btn){ btn.textContent = 'Sign out'; btn.onclick = doLogout; btn.title = currentUser.email; }
-        if(mobileBtn){ mobileBtn.textContent = `Sign out (${currentUser.email})`; mobileBtn.onclick = (e)=>{e.preventDefault();doLogout();toggleMenu();}; }
+
+      // Therapist nav: swap "I'm a Therapist" → "My Portal" when a therapist is signed in.
+      const tLink = document.getElementById('therapistNavLink');
+      const tLinkMobile = document.getElementById('therapistNavLinkMobile');
+      if(currentTherapist){
+        if(tLink){ tLink.textContent = 'My Portal'; tLink.setAttribute('href', '/therapist-portal'); }
+        if(tLinkMobile){ tLinkMobile.textContent = 'My Portal'; tLinkMobile.setAttribute('href', '/therapist-portal'); }
       } else {
-        if(btn){ btn.textContent = 'Sign in'; btn.onclick = () => openAuthModal('login'); }
+        if(tLink){ tLink.textContent = "I'm a Therapist"; tLink.setAttribute('href', 'subwebt.html'); }
+        if(tLinkMobile){ tLinkMobile.textContent = "I'm a Therapist"; tLinkMobile.setAttribute('href', 'subwebt.html'); }
+      }
+
+      const signedIn = !!(currentUser || currentTherapist);
+      if(signedIn){
+        // Replace Sign in button with the profile circle showing initials.
+        if(btn) btn.style.display = 'none';
+        if(profileWrap) profileWrap.style.display = '';
+        // Prefer the client identity if both are active; otherwise show therapist info.
+        const who = currentUser
+          ? { name: [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' '), email: currentUser.email, role: 'client' }
+          : { name: [currentTherapist.first_name, currentTherapist.last_name].filter(Boolean).join(' '), email: currentTherapist.email, role: 'therapist' };
+        document.getElementById('profileInitials').textContent = getInitials(who.name, who.email);
+        document.getElementById('profileBtn').title = who.email || who.name;
+        document.getElementById('profileMenuName').textContent = who.name || who.email || 'Account';
+        document.getElementById('profileMenuEmail').textContent = who.email || '';
+        // Dropdown links: clients see My Bookings; therapists see My Portal. If both, show both.
+        document.getElementById('profileMenuMain').style.display = currentUser ? 'block' : 'none';
+        document.getElementById('profileMenuPortal').style.display = currentTherapist ? 'block' : 'none';
+        if(mobileBtn){
+          mobileBtn.textContent = `Sign out (${who.email || who.name})`;
+          mobileBtn.onclick = (e)=>{e.preventDefault();doLogout();toggleMenu();};
+        }
+      } else {
+        if(btn){ btn.style.display = ''; btn.textContent = 'Sign in'; btn.onclick = () => openAuthModal('login'); }
+        if(profileWrap) profileWrap.style.display = 'none';
+        closeProfileMenu();
         if(mobileBtn){ mobileBtn.textContent = 'Sign in'; mobileBtn.onclick = (e)=>{e.preventDefault();openAuthModal('login');toggleMenu();}; }
       }
     }
+
+    function toggleProfileMenu(e){
+      if(e) e.stopPropagation();
+      const m = document.getElementById('profileMenu');
+      m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    }
+    function closeProfileMenu(){
+      const m = document.getElementById('profileMenu');
+      if(m) m.style.display = 'none';
+    }
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('profileWrap');
+      if(wrap && !wrap.contains(e.target)) closeProfileMenu();
+    });
 
     function openAuthModal(mode){
       authMode = mode;
@@ -2427,6 +2708,12 @@
           err.style.display = 'block';
           return;
         }
+        // Admin logged in via the client login form — send them straight to /admin.
+        if(data.isAdmin){
+          showToast('Signed in as admin — taking you to the dashboard.');
+          window.location.href = data.redirect || '/admin';
+          return;
+        }
         await checkAuth();
         showToast(authMode === 'signup' ? 'Account created!' : 'Welcome back!');
         closeAuthModal();
@@ -2438,8 +2725,13 @@
     }
 
     async function doLogout(){
-      await fetch('/api/clients/logout', { method: 'POST', credentials: 'include' });
+      // Sign out of every active session (client and/or therapist).
+      const calls = [];
+      if(currentUser) calls.push(fetch('/api/clients/logout', { method: 'POST', credentials: 'include' }));
+      if(currentTherapist) calls.push(fetch('/api/therapists/logout', { method: 'POST', credentials: 'include' }));
+      try { await Promise.all(calls); } catch {}
       currentUser = null;
+      currentTherapist = null;
       renderAuthState();
       showToast('Signed out.');
     }
@@ -2471,7 +2763,7 @@
             appointmentDate: dateVal,
             timeSlot: selectedTime,
             sessionType: activeMeeting,
-            total: currentBookingPrice()
+            total: currentSubtotal()
           })
         });
         if(res.status === 401){
@@ -2490,8 +2782,9 @@
         closeModalDirect();
         showToast(`Booked with ${selectedDoctor.name} on ${dateVal} at ${selectedTime}.`);
         if(data.id) {
-          // Prompt for payment immediately
-          setTimeout(() => openPayModal(data.id, currentBookingPrice()), 600);
+          // Prompt for payment immediately, using the server's authoritative total.
+          const total = Number(data.total) || currentBookingPrice();
+          setTimeout(() => openPayModal(data.id, total), 600);
         }
       } catch {
         showToast('Network error. Please try again.');
@@ -2559,6 +2852,34 @@
     })();
     checkAuth();
     loadSpecialists();
+    loadSiteInfo();
+
+    async function loadSiteInfo(){
+      try {
+        const r = await fetch('/api/site-info');
+        if(!r.ok) return;
+        const { contact } = await r.json();
+        if(!contact) return;
+        const set = (id, val, attr) => {
+          const el = document.getElementById(id);
+          if(!el || !val) return;
+          if(attr) el.setAttribute(attr, val);
+          else el.textContent = val;
+        };
+        const phoneHref = p => 'tel:' + String(p).replace(/[^+0-9]/g, '');
+        set('contactPhone1', contact.phone1);
+        set('contactPhone1', phoneHref(contact.phone1), 'href');
+        set('contactPhone2', contact.phone2);
+        set('contactPhone2', phoneHref(contact.phone2), 'href');
+        set('contactHours', contact.hours);
+        set('contactEmail', contact.email);
+        set('contactEmail', 'mailto:' + contact.email, 'href');
+        set('contactCity', contact.city);
+        set('contactRegion', contact.region);
+        const footer = document.getElementById('footerPhones');
+        if(footer && contact.phone1) footer.textContent = `${contact.phone1}${contact.phone2 ? ' / ' + contact.phone2 : ''}`;
+      } catch {}
+    }
   </script>
 </body>
 </html>

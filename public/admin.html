@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bond Therapy — Admin</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%232b6cff%22&gt;&lt;path d=%22M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z%22/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -136,6 +137,12 @@ button,input,select,textarea{font:inherit}
 <!-- LOGIN -->
 <div class="login-wrap" id="loginWrap">
   <div class="login-card">
+    <a href="/" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:18px">
+      <span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary-2));box-shadow:0 6px 16px rgba(43,108,255,.22)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+      </span>
+      <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--text)">Bond Therapy</span>
+    </a>
     <h1>Admin Login</h1>
     <p class="sub">Bond Therapy management dashboard</p>
     <label>Username</label>
@@ -144,6 +151,7 @@ button,input,select,textarea{font:inherit}
     <input type="password" id="loginPass" autocomplete="current-password" />
     <div class="err" id="loginErr">Invalid credentials</div>
     <button onclick="doLogin()">Sign in</button>
+    <p style="text-align:center;margin-top:16px;font-size:.85rem"><a href="/" style="color:var(--muted);font-weight:500;text-decoration:none">← Back to home</a></p>
   </div>
 </div>
 
@@ -163,6 +171,9 @@ button,input,select,textarea{font:inherit}
     </button>
     <button class="nav-btn" data-page="messages" onclick="showPage('messages')">
       <span>Messages</span><span class="nav-badge" id="badgeMessages" style="display:none">0</span>
+    </button>
+    <button class="nav-btn" data-page="chats" onclick="showPage('chats')">
+      <span>Chats</span><span class="nav-badge" id="badgeChats" style="display:none">0</span>
     </button>
     <button class="nav-btn" data-page="clients" onclick="showPage('clients')">Clients</button>
     <button class="nav-btn" data-page="blog" onclick="showPage('blog')">Blog</button>
@@ -255,6 +266,17 @@ button,input,select,textarea{font:inherit}
       </div>
     </section>
 
+    <!-- CHATS -->
+    <section class="page-section" id="page-chats">
+      <div class="page-head">
+        <div><h1>Booking chats</h1><p>Every conversation between a client and a therapist. Click a thread to read it, manage individual messages, or remove the whole conversation.</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>All conversations</h3></div>
+        <div class="panel-body" id="chatsList"></div>
+      </div>
+    </section>
+
     <!-- CLIENTS -->
     <section class="page-section" id="page-clients">
       <div class="page-head">
@@ -338,6 +360,7 @@ function showPage(p) {
   if (p === 'bookings') loadBookings();
   if (p === 'therapists') loadTherapists();
   if (p === 'messages') loadMessages();
+  if (p === 'chats') loadChats();
   if (p === 'clients') loadClients();
   if (p === 'resets') loadResets();
   if (p === 'blog') loadBlogAdmin();
@@ -467,12 +490,14 @@ async function refresh() {
 function updateBadges(s) {
   const setBadge = (id, n) => {
     const el = document.getElementById(id);
+    if (!el) return;
     if (n > 0) { el.style.display = 'inline-block'; el.textContent = n; }
     else el.style.display = 'none';
   };
   setBadge('badgeMessages', s.unreadMessages);
   setBadge('badgeTherapists', s.pendingTherapists);
   setBadge('badgeResets', s.pendingResets || 0);
+  setBadge('badgeChats', s.chats || 0);
 }
 
 function renderStats(s) {
@@ -689,7 +714,7 @@ async function loadMessages() {
       <div class="actions" style="flex-direction:column;align-items:flex-end">
         <div style="color:var(--muted);font-size:.8rem">${fmtDate(m.created_at)}</div>
         ${!m.is_read ? `<button class="btn btn-ghost" onclick="markRead(${m.id})">Mark read</button>` : ''}
-        <a class="btn btn-outline" href="mailto:${escapeAttr(m.email)}?subject=Re:%20Your%20message%20to%20Bond%20Therapy" target="_blank" rel="noopener">Reply</a>
+        <button class="btn btn-outline" onclick="openReplyModal(${m.id}, '${escapeAttr(m.email)}', '${escapeAttr(m.first_name||'')}')">Reply by email</button>
         <button class="btn btn-red" onclick="deleteMessage(${m.id})">Delete</button>
       </div>
     </div>
@@ -700,6 +725,174 @@ async function markRead(id) {
   await api(`/api/admin/messages/${id}/read`, { method: 'POST' });
   refresh();
   loadMessages();
+}
+
+/* === BOOKING CHATS === */
+async function loadChats() {
+  const rows = await api('/api/admin/chats');
+  const list = document.getElementById('chatsList');
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><h3>No conversations yet</h3><p>When a client or therapist sends a chat message about a booking, it'll appear here.</p></div>`;
+    return;
+  }
+  list.innerHTML = rows.map(c => {
+    const clientName = `${c.client_first_name || ''} ${c.client_last_name || ''}`.trim() || c.client_email || `Client #${c.booking_id}`;
+    const preview = (c.last_body || '').slice(0, 140);
+    const senderLabel = c.last_sender === 'client' ? clientName : (c.last_sender === 'therapist' ? c.therapist_name : 'Admin');
+    return `
+      <div class="list-item">
+        <div class="info">
+          <strong>${escapeHtml(clientName)} ↔ ${escapeHtml(c.therapist_name || '')}</strong>
+          <div class="meta">
+            <span>Booking #${c.booking_id}</span>
+            <span>${escapeHtml(c.appointment_date || '—')} ${escapeHtml(c.time_slot || '')}</span>
+            <span>${c.message_count} message${c.message_count === 1 ? '' : 's'}</span>
+            <span class="pill pill-${c.status==='confirmed'?'green':c.status==='cancelled'?'red':'amber'}">${c.status || 'pending'}</span>
+          </div>
+          ${preview ? `<div style="margin-top:8px;color:var(--text);font-size:.9rem"><strong style="font-size:.78rem;color:var(--muted)">${escapeHtml(senderLabel)}:</strong> ${escapeHtml(preview)}${(c.last_body||'').length > 140 ? '…' : ''}</div>` : ''}
+        </div>
+        <div class="actions" style="flex-direction:column;align-items:flex-end">
+          <div style="color:var(--muted);font-size:.8rem">${fmtDate(c.last_at)}</div>
+          <button class="btn btn-outline" onclick="openChatViewer(${c.booking_id})">Open thread</button>
+          <button class="btn btn-red" onclick="deleteChatThread(${c.booking_id})">Delete thread</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function openChatViewer(bookingId) {
+  const rows = await api(`/api/admin/chats/${bookingId}/messages`);
+  renderChatViewer(bookingId, rows);
+}
+
+function renderChatViewer(bookingId, rows) {
+  const body = !rows.length
+    ? `<div style="color:var(--muted);text-align:center;padding:30px 0;font-size:.9rem">All messages in this thread have been deleted.</div>`
+    : rows.map(m => {
+        const sideColor = m.sender_role === 'client' ? 'rgba(43,108,255,.08)'
+                        : m.sender_role === 'therapist' ? 'rgba(22,163,74,.1)'
+                        : 'rgba(217,119,6,.1)';
+        const labelColor = m.sender_role === 'client' ? 'var(--primary)'
+                        : m.sender_role === 'therapist' ? 'var(--green)'
+                        : 'var(--amber)';
+        return `
+          <div style="background:${sideColor};border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-family:'DM Mono',monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:${labelColor};font-weight:700">
+                ${m.sender_role} · ${(m.created_at||'').replace('T',' ').slice(0,16)}
+              </div>
+              <button class="btn btn-red" style="padding:3px 8px;font-size:.72rem" onclick="deleteChatMessage(${m.id}, ${bookingId})">Delete</button>
+            </div>
+            <div style="white-space:pre-wrap;color:var(--text);font-size:.92rem;line-height:1.5;word-wrap:break-word">${escapeHtml(m.body)}</div>
+          </div>`;
+      }).join('');
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2>Booking #${bookingId} — chat</h2>
+    <p class="sub">All messages between client and therapist for this booking.</p>
+    <div style="background:#f3f6fc;border:1px solid var(--line);border-radius:14px;padding:14px;max-height:60vh;overflow-y:auto">
+      ${body}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-red" onclick="deleteChatThread(${bookingId});closeModal()">Delete whole thread</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+async function deleteChatMessage(messageId, bookingId) {
+  if (!confirm('Delete this message? This cannot be undone.')) return;
+  const res = await fetch(`/api/admin/chats/messages/${messageId}`, { method: 'DELETE', credentials: 'include' });
+  if (!res.ok) { alert('Could not delete message.'); return; }
+  const rows = await api(`/api/admin/chats/${bookingId}/messages`);
+  renderChatViewer(bookingId, rows);
+  loadChats(); refresh();
+}
+
+async function deleteChatThread(bookingId) {
+  if (!confirm(`Delete every message in booking #${bookingId}'s chat? This cannot be undone.`)) return;
+  const res = await fetch(`/api/admin/chats/${bookingId}`, { method: 'DELETE', credentials: 'include' });
+  if (!res.ok) { alert('Could not delete thread.'); return; }
+  loadChats(); refresh();
+}
+
+let _adminConfigCache = null;
+async function getAdminConfig(){
+  if(_adminConfigCache) return _adminConfigCache;
+  try { _adminConfigCache = await api('/api/admin/config'); } catch { _adminConfigCache = { emailEnabled: false }; }
+  return _adminConfigCache;
+}
+
+async function openReplyModal(id, email, firstName){
+  const cfg = await getAdminConfig();
+  const replies = await api(`/api/admin/messages/${id}/replies`).catch(() => []);
+  const repliesHtml = (replies && replies.length) ? `
+    <div style="margin-top:14px">
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Previous replies</div>
+      ${replies.map(r => `
+        <div style="background:#f3f6fc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">${fmtDate(r.created_at)} ${r.delivered ? '<span class="pill pill-green" style="margin-left:6px">delivered</span>' : '<span class="pill pill-red" style="margin-left:6px">failed</span>'}</div>
+          <div style="white-space:pre-wrap;font-size:.92rem">${escapeHtml(r.body)}</div>
+          ${r.delivery_error ? `<div style="color:var(--red);font-size:.78rem;margin-top:6px">Error: ${escapeHtml(r.delivery_error)}</div>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  const warning = cfg.emailEnabled ? '' : `
+    <div style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:12px 14px;border-radius:10px;font-size:.88rem;margin-bottom:14px">
+      <strong>Email isn't configured.</strong> Set <code>RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in your .env file to send replies.
+    </div>`;
+
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2>Reply to ${escapeHtml(firstName || email)}</h2>
+    <p class="sub">An email will be sent to <strong>${escapeHtml(email)}</strong> from your configured sender address.</p>
+    ${warning}
+    <label class="modal-label" style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase">Your reply</label>
+    <textarea id="replyBody" rows="8" placeholder="Type your response…" maxlength="5000" style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;margin-top:8px;resize:vertical;font-family:inherit;line-height:1.6"></textarea>
+    <div id="replyErr" style="display:none;color:var(--red);font-size:.88rem;margin-top:10px"></div>
+    ${repliesHtml}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="replySendBtn" ${cfg.emailEnabled ? '' : 'disabled style="opacity:.5;cursor:not-allowed"'} onclick="sendReply(${id})">Send reply</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+async function sendReply(id){
+  const body = document.getElementById('replyBody').value.trim();
+  const err = document.getElementById('replyErr');
+  err.style.display = 'none';
+  if(!body){ err.textContent = 'Please write a reply first.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('replySendBtn');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`/api/admin/messages/${id}/reply`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body })
+    });
+    if(res.status === 503){
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.message || 'Email is not configured.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = orig;
+      return;
+    }
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.reason ? `Could not send: ${data.reason}` : 'Could not send. Try again.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = orig;
+      return;
+    }
+    closeModal();
+    refresh();
+    loadMessages();
+  } catch {
+    err.textContent = 'Network error.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = orig;
+  }
 }
 
 async function deleteMessage(id) {
