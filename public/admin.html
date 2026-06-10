@@ -145,9 +145,9 @@ button,input,select,textarea{font:inherit}
     </a>
     <h1>Admin Login</h1>
     <p class="sub">Bond Therapy management dashboard</p>
-    <label>Username</label>
+    <label for="loginUser">Username</label>
     <input type="text" id="loginUser" autocomplete="username" />
-    <label>Password</label>
+    <label for="loginPass">Password</label>
     <input type="password" id="loginPass" autocomplete="current-password" />
     <div class="err" id="loginErr">Invalid credentials</div>
     <button onclick="doLogin()">Sign in</button>
@@ -470,9 +470,32 @@ async function loadResets() {
 async function approveReset(id, email) {
   const res = await api(`/api/admin/password-resets/${id}/approve`, { method:'POST' });
   if (res.ok && res.link) {
-    prompt(`Reset link for ${email}\n\nSend this link to the client (WhatsApp / email / etc). They can click it once to set a new password. It expires in 24 hours.`, res.link);
+    showResetLinkModal(email, res.link);
     refresh(); loadResets();
   }
+}
+
+function showResetLinkModal(email, link) {
+  document.getElementById('detailModalBody').innerHTML = `
+    <h2 style="margin-bottom:6px">Reset link ready</h2>
+    <p class="sub" style="color:var(--muted);margin-bottom:14px">For <strong>${escapeHtml(email)}</strong></p>
+    <p style="font-size:.9rem;margin-bottom:14px">We do <strong>not</strong> send this automatically — copy it and send it to the client yourself (WhatsApp, email, etc). It works once and expires in 24 hours.</p>
+    <input type="text" readonly id="resetLinkField" value="${escapeAttr(link)}"
+           style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.85rem;margin-bottom:12px"
+           onfocus="this.select()" />
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-green" id="copyResetLink">Copy link</button>
+    </div>`;
+  document.getElementById('detailModal').classList.add('show');
+  document.getElementById('copyResetLink').onclick = async () => {
+    const field = document.getElementById('resetLinkField');
+    field.select();
+    try { await navigator.clipboard.writeText(link); } catch { document.execCommand('copy'); }
+    const btn = document.getElementById('copyResetLink');
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
+  };
 }
 async function dismissReset(id) {
   if (!confirm('Dismiss this request?')) return;
@@ -689,6 +712,10 @@ function viewTherapist(id) {
 function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
 
 async function setTherapistStatus(id, action) {
+  const msg = action === 'approve'
+    ? 'Approve this therapist? They will appear in the public directory and be notified by email.'
+    : 'Decline this application? The therapist will be notified by email.';
+  if (!confirm(msg)) return;
   await api(`/api/admin/therapists/${id}/${action}`, { method: 'POST' });
   refresh();
   loadTherapists();

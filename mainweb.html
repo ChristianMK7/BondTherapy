@@ -1535,7 +1535,7 @@
         <div class="summary-row" id="sumFeeRow" style="display:none"><span id="sumFeeLabel">Platform fee</span><strong id="sumFee">$0</strong></div>
         <div class="summary-row summary-total"><span>Total</span><strong id="sumTotal">$60</strong></div>
       </div>
-      <button class="modal-confirm" onclick="confirmBooking()">Confirm appointment</button>
+      <button class="modal-confirm" id="bookingSubmit" onclick="confirmBooking()">Confirm appointment</button>
     </div>
   </div>
 
@@ -1646,7 +1646,7 @@
       <label class="modal-label" for="reviewComment">Comment (optional)</label>
       <textarea class="field-input" id="reviewComment" rows="4" placeholder="Tell others what your experience was like…" maxlength="1000" style="resize:vertical"></textarea>
       <div id="reviewErr" style="display:none;color:#dc2626;font-size:.88rem;margin-top:14px"></div>
-      <button class="modal-confirm" onclick="submitReview()">Submit review</button>
+      <button class="modal-confirm" id="reviewSubmit" onclick="submitReview()">Submit review</button>
     </div>
   </div>
 
@@ -1835,7 +1835,7 @@
         const t = await profileRes.json();
         const reviews = reviewsRes.ok ? await reviewsRes.json() : [];
         const photoOrInitials = t.hasPhoto
-          ? `<img src="/api/therapists/${t.id}/photo" alt="${t.name}" style="width:120px;height:120px;border-radius:24px;object-fit:cover;box-shadow:0 8px 24px rgba(22,52,120,.15)">`
+          ? `<img src="/api/therapists/${t.id}/photo" alt="${escapeAttr(t.name)}" style="width:120px;height:120px;border-radius:24px;object-fit:cover;box-shadow:0 8px 24px rgba(22,52,120,.15)">`
           : `<div class="doc-avatar av-1" style="width:120px;height:120px;border-radius:24px;font-size:1.8rem">${t.name.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('')}</div>`;
         const hasRating = t.rating && t.reviewCount > 0;
         const stars = hasRating ? buildStars(t.rating) : '';
@@ -1931,7 +1931,7 @@
           const payColor = pay === 'confirmed' ? '#16a34a' : pay === 'declined' ? '#dc2626' : '#d97706';
           const payBg    = pay === 'confirmed' ? '#dcfce7' : pay === 'declined' ? '#fee2e2' : '#fef3c7';
           const canPay = status !== 'cancelled' && (pay === 'unpaid' || pay === 'declined');
-          const canReview = !b.review_id && status !== 'cancelled';
+          const canReview = !b.review_id && status === 'confirmed' && pay === 'confirmed';
           return `
             <article style="background:rgba(255,255,255,.92);border:1px solid rgba(43,108,255,.1);border-radius:18px;padding:22px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:flex-start;backdrop-filter:blur(8px)">
               <div style="flex:1;min-width:240px">
@@ -1961,9 +1961,13 @@
 
     async function cancelBooking(id){
       if(!confirm('Cancel this booking?')) return;
-      const res = await fetch(`/api/clients/me/bookings/${id}/cancel`, { method:'POST', credentials:'include' });
-      if(res.ok){ showToast('Booking cancelled.'); loadMyBookings(); }
-      else showToast('Could not cancel booking.');
+      try {
+        const res = await fetch(`/api/clients/me/bookings/${id}/cancel`, { method:'POST', credentials:'include' });
+        if(res.ok){ showToast('Booking cancelled.'); loadMyBookings(); }
+        else showToast('Could not cancel booking.');
+      } catch {
+        showToast('Network error — booking was not cancelled. Please try again.');
+      }
     }
 
     /* === PAYMENT === */
@@ -2043,19 +2047,30 @@
       err.style.display = 'none';
       if(!reviewRating){ err.textContent = 'Please select a star rating.'; err.style.display = 'block'; return; }
       const comment = document.getElementById('reviewComment').value.trim();
-      const res = await fetch('/api/reviews', {
-        method:'POST', credentials:'include',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ bookingId: reviewBookingId, rating: reviewRating, comment })
-      });
-      if(res.ok){
-        closeReviewModal();
-        showToast('Thanks for your review!');
-        loadMyBookings();
-      } else {
-        const data = await res.json().catch(()=>({}));
-        err.textContent = data.error === 'already_reviewed' ? 'You\'ve already reviewed this booking.' : 'Could not submit review.';
+      const btn = document.getElementById('reviewSubmit');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/reviews', {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ bookingId: reviewBookingId, rating: reviewRating, comment })
+        });
+        if(res.ok){
+          closeReviewModal();
+          showToast('Thanks for your review!');
+          loadMyBookings();
+        } else {
+          const data = await res.json().catch(()=>({}));
+          err.textContent = data.error === 'already_reviewed' ? 'You\'ve already reviewed this booking.'
+            : data.error === 'booking_not_confirmed' ? 'You can review once your booking is confirmed.'
+            : 'Could not submit review.';
+          err.style.display = 'block';
+        }
+      } catch {
+        err.textContent = 'Network error. Please try again.';
         err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
       }
     }
 
@@ -2157,7 +2172,8 @@
       if (!d) return DEFAULT_SLOTS;
       const start = parseTimeHHMM(d.startTime);
       const end   = parseTimeHHMM(d.endTime);
-      const dur   = Number(d.duration) || 0;
+      // The signup form stores duration as "45 min" — parseInt reads the leading number.
+      const dur   = parseInt(d.duration, 10) || 0;
       if (start == null || end == null || end <= start || dur < 15) return DEFAULT_SLOTS;
       const slots = [];
       // Generate session start times spaced by `dur` until the next slot would end after `end`.
@@ -2167,7 +2183,10 @@
     function isWorkingDay(d, dateStr) {
       if (!d || !Array.isArray(d.workingDays) || !d.workingDays.length) return true;
       const day = new Date(dateStr + 'T00:00:00').getDay();
-      return d.workingDays.includes(DAY_NAMES[day]);
+      // The signup form stores short day names ("Mon"); match on the 3-letter prefix
+      // so both "Mon" and "Monday" work.
+      const want = DAY_NAMES[day].slice(0, 3).toLowerCase();
+      return d.workingDays.some(w => String(w).slice(0, 3).toLowerCase() === want);
     }
 
     let activeCity='', activeSpecialty='', activeMeeting='', selectedDoctor=null, selectedTime='';
@@ -2284,7 +2303,7 @@
     function renderDoc(d){
       const price = d.onlinePrice || d.onsitePrice || 60;
       const avatar = d.hasPhoto
-        ? `<img class="doc-avatar-img" src="/api/therapists/${d.id}/photo" alt="${d.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
+        ? `<img class="doc-avatar-img" src="/api/therapists/${d.id}/photo" alt="${escapeAttr(d.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
            <div class="doc-avatar ${d.avClass}" style="display:none">${initials(d.name)}</div>`
         : `<div class="doc-avatar ${d.avClass}">${initials(d.name)}</div>`;
       const hasRating = d.rating && d.reviewCount > 0;
@@ -2690,6 +2709,8 @@
             phone:     document.getElementById('auth-phone').value.trim() }
         : { email, password };
 
+      const btn = document.getElementById('authSubmit');
+      btn.disabled = true;
       try {
         const res = await fetch(url, {
           method: 'POST', credentials: 'include',
@@ -2721,6 +2742,8 @@
       } catch {
         err.textContent = 'Network error. Please try again.';
         err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
       }
     }
 
@@ -2751,6 +2774,8 @@
         return;
       }
 
+      const bookBtn = document.getElementById('bookingSubmit');
+      bookBtn.disabled = true;
       try {
         const res = await fetch('/api/bookings', {
           method: 'POST', credentials: 'include',
@@ -2788,6 +2813,8 @@
         }
       } catch {
         showToast('Network error. Please try again.');
+      } finally {
+        bookBtn.disabled = false;
       }
     }
 
@@ -2840,6 +2867,49 @@
     }
 
     function toggleMenu(){ document.getElementById('mobileMenu').classList.toggle('open'); }
+
+    /* === MODAL ACCESSIBILITY (focus trap, Escape, focus restore) === */
+    const MODAL_CLOSERS = {
+      modalOverlay:  () => closeModalDirect(),
+      authOverlay:   () => closeAuthModal(),
+      payOverlay:    () => closePayModal(),
+      reviewOverlay: () => closeReviewModal(),
+      chatOverlay:   () => closeChatModal()
+    };
+    let modalReturnFocus = null;
+    function focusableIn(overlay){
+      return [...overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        .filter(el => !el.disabled && el.offsetParent !== null);
+    }
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      new MutationObserver(() => {
+        if(ov.classList.contains('open')){
+          modalReturnFocus = document.activeElement;
+          const els = focusableIn(ov);
+          // Focus the first field rather than the close button when there is one.
+          (els.find(el => /^(input|select|textarea)$/i.test(el.tagName)) || els[0])?.focus();
+        } else if(modalReturnFocus){
+          modalReturnFocus.focus?.();
+          modalReturnFocus = null;
+        }
+      }).observe(ov, { attributes: true, attributeFilter: ['class'] });
+    });
+    document.addEventListener('keydown', e => {
+      const ov = document.querySelector('.modal-overlay.open');
+      if(!ov) return;
+      if(e.key === 'Escape'){
+        e.preventDefault();
+        MODAL_CLOSERS[ov.id]?.();
+        return;
+      }
+      if(e.key === 'Tab'){
+        const els = focusableIn(ov);
+        if(!els.length) return;
+        const first = els[0], last = els[els.length - 1];
+        if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && (document.activeElement === last || !ov.contains(document.activeElement))){ e.preventDefault(); first.focus(); }
+      }
+    });
 
     // INIT
     setTheme(localStorage.getItem('bond_theme') || 'light');

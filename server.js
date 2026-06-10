@@ -14,6 +14,10 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-secret-change-me'
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
 const PROD = process.env.NODE_ENV === 'production';
+if (PROD && (!process.env.SESSION_SECRET || !process.env.ADMIN_PASS)) {
+  console.error('FATAL: SESSION_SECRET and ADMIN_PASS must be set in production. Refusing to start with insecure defaults.');
+  process.exit(1);
+}
 const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 const PLATFORM_FEE_PERCENT = Math.max(0, Number(process.env.PLATFORM_FEE_PERCENT) || 0);
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
@@ -961,6 +965,47 @@ app.get('/api/therapists/me/bookings', requireTherapist, (req, res) => {
   res.json(rows);
 });
 
+// Full editable profile for the portal's edit form
+app.get('/api/therapists/me/profile', requireTherapist, (req, res) => {
+  const r = db.prepare(`
+    SELECT phone, city, address, bio, languages, focus, approaches, session_types,
+           working_days, start_time, end_time, duration, online_price, onsite_price,
+           insurance, cancellation, schedule_notes, pricing_notes, website
+    FROM therapists WHERE id = ?
+  `).get(req.session.therapistId);
+  if (!r) return res.status(404).json({ error: 'not_found' });
+  res.json({
+    phone: r.phone || '', city: r.city || '', address: r.address || '', bio: r.bio || '',
+    languages: parseList(r.languages), focus: parseList(r.focus), approaches: parseList(r.approaches),
+    sessionTypes: parseList(r.session_types), workingDays: parseList(r.working_days),
+    startTime: r.start_time || '', endTime: r.end_time || '', duration: r.duration || '',
+    onlinePrice: r.online_price || '', onsitePrice: r.onsite_price || '',
+    insurance: r.insurance || '', cancellation: r.cancellation || '',
+    scheduleNotes: r.schedule_notes || '', pricingNotes: r.pricing_notes || '', website: r.website || ''
+  });
+});
+
+// Therapist updates their own profile (credentials/identity fields stay admin-only)
+app.put('/api/therapists/me/profile', requireTherapist, (req, res) => {
+  const b = req.body || {};
+  const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  const list = v => JSON.stringify(Array.isArray(v) ? v.map(x => String(x).slice(0, 60)).slice(0, 30) : []);
+  const time = v => /^\d{2}:\d{2}$/.test(String(v || '')) ? String(v) : '';
+  db.prepare(`
+    UPDATE therapists SET
+      phone = ?, city = ?, address = ?, bio = ?,
+      working_days = ?, start_time = ?, end_time = ?, duration = ?,
+      online_price = ?, onsite_price = ?, website = ?
+    WHERE id = ?
+  `).run(
+    str(b.phone, 40), str(b.city, 60), str(b.address, 160), str(b.bio, 2000),
+    list(b.workingDays), time(b.startTime), time(b.endTime), str(b.duration, 10),
+    str(b.onlinePrice, 10), str(b.onsitePrice, 10), str(b.website, 200),
+    req.session.therapistId
+  );
+  res.json({ ok: true });
+});
+
 // ─── PUBLIC THERAPIST DIRECTORY (approved only) ─────────────────────────────
 function therapistAggregates(id) {
   const r = db.prepare(`SELECT AVG(rating) AS avg, COUNT(*) AS n FROM reviews WHERE therapist_id = ?`).get(id);
@@ -1068,6 +1113,9 @@ app.post('/api/reviews', requireClient, (req, res) => {
   const booking = db.prepare(`SELECT * FROM bookings WHERE id = ? AND client_id = ?`).get(bookingId, req.session.clientId);
   if (!booking) return res.status(404).json({ error: 'booking_not_found' });
   if (booking.status === 'cancelled') return res.status(400).json({ error: 'cannot_review_cancelled' });
+  if (booking.status !== 'confirmed' || booking.payment_status !== 'confirmed') {
+    return res.status(400).json({ error: 'booking_not_confirmed' });
+  }
   const exists = db.prepare(`SELECT id FROM reviews WHERE booking_id = ?`).get(bookingId);
   if (exists) return res.status(409).json({ error: 'already_reviewed' });
   db.prepare(`INSERT INTO reviews (booking_id, client_id, therapist_id, rating, comment) VALUES (?, ?, ?, ?, ?)`)
@@ -1086,8 +1134,7 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
 });
 
 app.post('/api/admin/logout', (req, res) => {
-  req.session.isAdmin = false;
-  res.json({ ok: true });
+  req.session.destroy(() => res.json({ ok: true }));
 });
 
 app.get('/api/admin/me', (req, res) => {

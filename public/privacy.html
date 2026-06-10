@@ -17,7 +17,7 @@ header{margin-bottom:32px}
 header a{color:var(--primary);font-weight:600;font-size:.9rem;text-decoration:none}
 h1{font-family:'Playfair Display',serif;font-size:2.2rem;margin:24px 0 8px}
 .updated{color:var(--muted);font-size:.9rem;margin-bottom:24px}
-.placeholder{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:14px 16px;border-radius:12px;font-size:.92rem;margin-bottom:28px}
+
 h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin:28px 0 10px}
 p, li{color:#1f2a44;font-size:.98rem}
 ul{padding-left:22px;margin:8px 0 14px}
@@ -31,51 +31,58 @@ footer{margin-top:32px;color:var(--muted);font-size:.85rem;text-align:center}
   <header><a href="/">← Back to Bond Therapy</a></header>
   <div class="card">
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: <span id="date"></span></p>
+    <p class="updated">Last updated: June 10, 2026</p>
 
-    <div class="placeholder">
-      <strong>Placeholder content.</strong> This page is a template. Replace it with a policy reviewed by qualified counsel before public launch.
-    </div>
-
-    <p>Bond Therapy (“we”, “us”) respects your privacy. This policy describes the information we collect when you use our website and services, how we use it, and the choices you have.</p>
+    <p>Bond Therapy (“we”, “us”) is a therapist directory and booking platform operating in Lebanon. We respect your privacy. This policy describes the information we collect when you use our website, how we use it, who can see it, and the choices you have.</p>
 
     <h2>Information we collect</h2>
     <ul>
-      <li>Account details you provide (name, email, phone number, password).</li>
-      <li>Therapist application materials (bio, credentials, CV, photo, certificates).</li>
-      <li>Booking details (date, time, session type, payment reference).</li>
-      <li>Messages you send through our contact form.</li>
-      <li>Basic technical data (IP address, browser, pages visited) for security and analytics.</li>
+      <li><strong>Client accounts:</strong> name, email address, phone number and a password (stored only as a salted hash — we never store your actual password).</li>
+      <li><strong>Therapist applications:</strong> professional details you submit (bio, specialty, license number, education, schedule, pricing) and uploaded documents (CV, photo, certificates).</li>
+      <li><strong>Bookings:</strong> the therapist, date, time, session type and price of appointments you book.</li>
+      <li><strong>Payment references:</strong> the transaction reference you submit after paying by Whish or OMT. We never collect or store card numbers or wallet credentials — payment happens in your own payment app.</li>
+      <li><strong>Messages:</strong> contact-form messages, and in-app chat between a client and their booked therapist.</li>
+      <li><strong>Technical data:</strong> a session cookie to keep you signed in, and standard server logs (IP address, browser type) used for security and rate limiting.</li>
     </ul>
 
     <h2>How we use information</h2>
     <ul>
-      <li>To create and manage your account.</li>
-      <li>To process bookings and communicate with you about them.</li>
-      <li>To review and verify therapist applications.</li>
-      <li>To respond to messages and provide support.</li>
-      <li>To detect and prevent abuse of the service.</li>
+      <li>To create and manage your account and keep you signed in.</li>
+      <li>To process bookings, verify payment references, and notify you about your appointments (including by email where configured).</li>
+      <li>To review and verify therapist applications before listing them publicly.</li>
+      <li>To respond to your messages and provide support.</li>
+      <li>To detect and prevent abuse, including rate limiting and access controls.</li>
     </ul>
 
-    <h2>Sharing</h2>
-    <p>We do not sell your personal information. We share booking details with the therapist you book with, and only the data needed to fulfil that booking. We may share information with service providers (hosting, email) under appropriate confidentiality terms, or where required by law.</p>
+    <h2>Who can see your information</h2>
+    <ul>
+      <li><strong>Your therapist</strong> sees your name, contact details and the booking details needed to hold your session, plus chat messages you exchange with them.</li>
+      <li><strong>Our administrators</strong> can view bookings, payment references, contact messages, therapist applications, and booking chats in order to operate the service (for example, to confirm payments or moderate misuse).</li>
+      <li><strong>The public</strong> sees approved therapist profiles (name, photo, bio, specialty, pricing, availability) and reviews, shown with the reviewer's first name only.</li>
+      <li><strong>Service providers</strong> (hosting, email delivery) process data on our behalf under confidentiality terms. We do not sell personal information, and we disclose it otherwise only where required by law.</li>
+    </ul>
 
     <h2>Data retention</h2>
-    <p>We keep your information for as long as your account is active or as needed to provide our services and comply with legal obligations.</p>
+    <p>We keep your information for as long as your account is active or as needed to provide our services, resolve disputes and comply with legal obligations. We keep short-term database backups for disaster recovery, which are rotated automatically.</p>
 
     <h2>Your rights</h2>
-    <p>You may request access to, correction of, or deletion of your personal data by contacting us. You may close your account at any time.</p>
+    <p>You may request a copy of, correction of, or deletion of your personal data at any time using the contact form on our main site, and you may ask us to close your account. We will respond within a reasonable period.</p>
 
     <h2>Security</h2>
-    <p>We use industry-standard measures to protect your data, including password hashing, encrypted transport (HTTPS) in production, and access controls on administrative tools.</p>
+    <p>We protect your data with password hashing, encrypted transport (HTTPS) in production, session controls, and restricted administrative access. Password resets are reviewed before a reset link is issued. No method of transmission or storage is 100% secure, but we work to protect your information using industry-standard measures.</p>
+
+    <h2>Children</h2>
+    <p>Bond Therapy accounts are intended for adults. Sessions for children and teens must be arranged by a parent or legal guardian through their own account.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>If we make material changes to this policy, we will update the date above and, where appropriate, notify you on the site.</p>
 
     <h2>Contact</h2>
-    <p>For privacy questions, please use the contact form on our main site.</p>
+    <p>For privacy questions or data requests, please use the contact form on our main site or the contact details in the footer.</p>
   </div>
   <footer>© <span id="year"></span> Bond Therapy</footer>
 </div>
 <script>
-  document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 </body>

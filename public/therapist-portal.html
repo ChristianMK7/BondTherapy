@@ -92,7 +92,8 @@ button,input,select,textarea{font:inherit}
 .modal .sub{color:var(--muted);font-size:.88rem;margin-bottom:16px}
 .modal-close{background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;align-self:flex-end;margin-top:-8px;margin-bottom:-12px}
 #chatThread{background:rgba(43,108,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:200px;max-height:340px;overflow-y:auto;margin:8px 0 14px;display:flex;flex-direction:column;gap:10px}
-textarea.field-input,input.field-input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.95rem;outline:none;font-family:inherit}
+textarea.field-input,input.field-input,select.field-input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.95rem;outline:none;font-family:inherit;background:#fff}
+.f-label{display:block;font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,.4);box-shadow:0 0 0 4px rgba(43,108,255,.08)}
 .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border:none;cursor:pointer;border-radius:11px;padding:11px 18px;font-weight:700;font-size:.92rem}
 </style>
@@ -109,9 +110,9 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
     </a>
     <h1>Therapist Portal</h1>
     <p class="sub">Sign in to track your application and view bookings.</p>
-    <label>Email</label>
+    <label for="loginEmail">Email</label>
     <input type="email" id="loginEmail" autocomplete="email" />
-    <label>Password</label>
+    <label for="loginPass">Password</label>
     <input type="password" id="loginPass" autocomplete="current-password" />
     <div class="err" id="loginErr">Invalid email or password.</div>
     <button class="primary" onclick="doLogin()">Sign in</button>
@@ -137,6 +138,7 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <a href="/" class="btn btn-outline" style="text-decoration:none">← Back to home</a>
+      <button class="btn btn-outline" onclick="openEditProfile()">Edit profile</button>
       <button class="btn btn-outline" onclick="doLogout()">Sign out</button>
     </div>
   </div>
@@ -149,6 +151,40 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
       <span class="count" id="bookingsCount">0</span>
     </div>
     <div id="bookingsList"></div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="profileOverlay" onclick="if(event.target===this)closeEditProfile()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profileTitle" style="width:min(640px,100%)">
+    <button class="modal-close" onclick="closeEditProfile()" aria-label="Close">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 id="profileTitle">Edit profile</h2>
+    <p class="sub">Update your contact info, pricing and availability. Name, credentials and specialty changes go through our team — use the contact form on the main site.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><label class="f-label" for="pfPhone">Phone</label><input class="field-input" id="pfPhone" type="tel" /></div>
+      <div><label class="f-label" for="pfCity">City</label><input class="field-input" id="pfCity" type="text" /></div>
+      <div style="grid-column:1/-1"><label class="f-label" for="pfAddress">Practice address</label><input class="field-input" id="pfAddress" type="text" /></div>
+      <div style="grid-column:1/-1"><label class="f-label" for="pfBio">Bio</label><textarea class="field-input" id="pfBio" rows="4" maxlength="2000"></textarea></div>
+      <div><label class="f-label" for="pfOnline">Online price ($)</label><input class="field-input" id="pfOnline" type="number" min="0" max="999" /></div>
+      <div><label class="f-label" for="pfOnsite">On-site price ($)</label><input class="field-input" id="pfOnsite" type="number" min="0" max="999" /></div>
+      <fieldset style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:12px 14px">
+        <legend class="f-label" style="padding:0 6px">Working days</legend>
+        <div id="pfDays" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+      </fieldset>
+      <div><label class="f-label" for="pfStart">Day starts</label><input class="field-input" id="pfStart" type="time" /></div>
+      <div><label class="f-label" for="pfEnd">Day ends</label><input class="field-input" id="pfEnd" type="time" /></div>
+      <div><label class="f-label" for="pfDuration">Session length</label>
+        <select class="field-input" id="pfDuration">
+          <option value="30 min">30 min</option><option value="45 min">45 min</option>
+          <option value="60 min">60 min</option><option value="90 min">90 min</option>
+        </select>
+      </div>
+      <div><label class="f-label" for="pfWebsite">Website</label><input class="field-input" id="pfWebsite" type="url" placeholder="https://" /></div>
+    </div>
+    <div id="profileErr" style="display:none;color:var(--red);font-size:.88rem;margin-top:10px"></div>
+    <button class="btn btn-primary" id="profileSave" onclick="saveProfile()" style="margin-top:14px;width:100%">Save changes</button>
   </div>
 </div>
 
@@ -169,8 +205,13 @@ textarea.field-input:focus,input.field-input:focus{border-color:rgba(43,108,255,
 
 <script>
 async function init() {
-  const me = await fetch('/api/therapists/me', { credentials:'include' }).then(r => r.json());
-  if (me.loggedIn) showApp(me); else showLogin();
+  try {
+    const res = await fetch('/api/therapists/me', { credentials:'include' });
+    const me = res.ok ? await res.json() : { loggedIn: false };
+    if (me.loggedIn) showApp(me); else showLogin();
+  } catch {
+    showLogin();
+  }
 }
 function showLogin() {
   document.getElementById('loginWrap').style.display = 'grid';
@@ -217,8 +258,16 @@ function renderStatus(status) {
   }
 }
 async function loadBookings() {
-  const rows = await fetch('/api/therapists/me/bookings', { credentials:'include' }).then(r => r.json());
   const list = document.getElementById('bookingsList');
+  let rows;
+  try {
+    const res = await fetch('/api/therapists/me/bookings', { credentials:'include' });
+    if (!res.ok) throw new Error('load_failed');
+    rows = await res.json();
+  } catch {
+    list.innerHTML = `<div class="empty"><h3>Could not load bookings</h3><p>Please refresh the page to try again.</p></div>`;
+    return;
+  }
   document.getElementById('bookingsCount').textContent = rows.length;
   if (!Array.isArray(rows) || !rows.length) {
     list.innerHTML = `<div class="empty"><h3>No bookings yet</h3><p>When a client books an appointment with you, it'll appear here.</p></div>`;
@@ -273,6 +322,82 @@ async function doLogout() {
 }
 function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
+
+/* === EDIT PROFILE === */
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+async function openEditProfile(){
+  const err = document.getElementById('profileErr');
+  err.style.display = 'none';
+  let p;
+  try {
+    const res = await fetch('/api/therapists/me/profile', { credentials:'include' });
+    if(!res.ok) throw new Error('load_failed');
+    p = await res.json();
+  } catch {
+    alert('Could not load your profile. Please try again.');
+    return;
+  }
+  document.getElementById('pfPhone').value = p.phone;
+  document.getElementById('pfCity').value = p.city;
+  document.getElementById('pfAddress').value = p.address;
+  document.getElementById('pfBio').value = p.bio;
+  document.getElementById('pfOnline').value = parseInt(p.onlinePrice, 10) || '';
+  document.getElementById('pfOnsite').value = parseInt(p.onsitePrice, 10) || '';
+  document.getElementById('pfStart').value = p.startTime;
+  document.getElementById('pfEnd').value = p.endTime;
+  document.getElementById('pfWebsite').value = p.website;
+  const dur = document.getElementById('pfDuration');
+  dur.value = [...dur.options].some(o => o.value === p.duration) ? p.duration : '45 min';
+  // Stored days may be "Mon" (signup wizard) or "Monday" — match on the 3-letter prefix.
+  const have = (p.workingDays || []).map(d => String(d).slice(0,3).toLowerCase());
+  document.getElementById('pfDays').innerHTML = DAYS.map(d => `
+    <label style="display:inline-flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer">
+      <input type="checkbox" value="${d}" ${have.includes(d.toLowerCase()) ? 'checked' : ''}> ${d}
+    </label>`).join('');
+  document.getElementById('profileOverlay').classList.add('open');
+}
+function closeEditProfile(){ document.getElementById('profileOverlay').classList.remove('open'); }
+async function saveProfile(){
+  const err = document.getElementById('profileErr');
+  err.style.display = 'none';
+  const start = document.getElementById('pfStart').value;
+  const end = document.getElementById('pfEnd').value;
+  if(start && end && end <= start){
+    err.textContent = 'Your day must end after it starts.';
+    err.style.display = 'block';
+    return;
+  }
+  const body = {
+    phone: document.getElementById('pfPhone').value,
+    city: document.getElementById('pfCity').value,
+    address: document.getElementById('pfAddress').value,
+    bio: document.getElementById('pfBio').value,
+    onlinePrice: document.getElementById('pfOnline').value,
+    onsitePrice: document.getElementById('pfOnsite').value,
+    startTime: start,
+    endTime: end,
+    duration: document.getElementById('pfDuration').value,
+    website: document.getElementById('pfWebsite').value,
+    workingDays: [...document.querySelectorAll('#pfDays input:checked')].map(c => c.value)
+  };
+  const btn = document.getElementById('profileSave');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/therapists/me/profile', {
+      method:'PUT', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){ err.textContent = 'Could not save. Please try again.'; err.style.display='block'; return; }
+    closeEditProfile();
+    init();
+  } catch {
+    err.textContent = 'Network error. Please try again.';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 /* === CHAT === */
 let chatBookingId = null;
