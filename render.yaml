@@ -1,0 +1,23 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: push to GitHub, then in Render click "New +" → "Blueprint" and pick this repo.
+services:
+  - type: web
+    name: bond-therapy
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    # Free instances have an EPHEMERAL disk: the SQLite database and uploaded
+    # files reset on every deploy and after the service spins down when idle.
+    # Fine for a client demo. To persist data, switch `plan` to a paid tier and
+    # attach a disk mounted at /opt/render/project/src/data (see DEPLOYMENT.md).
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true   # Render generates a strong random value
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        sync: false           # set this yourself in the Render dashboard

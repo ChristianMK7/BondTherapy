@@ -18,7 +18,9 @@ if (PROD && (!process.env.SESSION_SECRET || !process.env.ADMIN_PASS)) {
   console.error('FATAL: SESSION_SECRET and ADMIN_PASS must be set in production. Refusing to start with insecure defaults.');
   process.exit(1);
 }
-const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+// RENDER_EXTERNAL_URL is injected automatically by Render, so a deploy works
+// without manually setting PUBLIC_URL (used for email links + the admin panel URL).
+const PUBLIC_URL = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const PLATFORM_FEE_PERCENT = Math.max(0, Number(process.env.PLATFORM_FEE_PERCENT) || 0);
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || '';
