@@ -406,6 +406,7 @@ body{
 
 /* ERROR */
 .err{font-size:.78rem;color:#ef4444;margin-top:4px;display:none}
+.pill:focus-visible,.day-card:focus-visible,.type-card:focus-visible,.pay-card:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .inp.invalid,.sel.invalid,.area.invalid{border-color:#fca5a5;background:#fff5f5}
 
 @media(max-width:820px){
@@ -1058,7 +1059,7 @@ body{
           Back
         </button>
         <span style="color:var(--muted);font-size:.88rem">Step 5 of 5</span>
-        <button class="btn btn-primary" onclick="submitProfile()">
+        <button class="btn btn-primary" id="submitBtn" onclick="submitProfile()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>
           Submit for Review
         </button>
@@ -1354,6 +1355,9 @@ async function submitProfile(){
   if(filesState.photo) fd.append('photo', filesState.photo);
   (filesState.cert || []).forEach(f => fd.append('certificates', f));
 
+  const submitBtn = document.getElementById('submitBtn');
+  if(submitBtn.disabled) return;
+  submitBtn.disabled = true;
   try {
     const res = await fetch('/api/therapists/signup', { method: 'POST', body: fd });
     const data = await res.json().catch(()=>({}));
@@ -1386,8 +1390,27 @@ async function submitProfile(){
     }
   } catch {
     showToast('Network error. Please try again.');
+  } finally {
+    submitBtn.disabled = false;
   }
 }
+
+// ── KEYBOARD ACCESS for pill / card toggles ──
+(function(){
+  const toggles = document.querySelectorAll('.pill[onclick],.day-card[onclick],.type-card[onclick],.pay-card[onclick]');
+  const pressed = el => el.classList.contains('on') || el.classList.contains('active');
+  const syncAll = () => toggles.forEach(el => el.setAttribute('aria-pressed', pressed(el) ? 'true' : 'false'));
+  toggles.forEach(el => {
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); }
+    });
+    // Single-select groups change sibling state too, so resync the whole set after any click.
+    el.addEventListener('click', () => setTimeout(syncAll, 0));
+  });
+  syncAll();
+})();
 
 // ── TOAST ──
 function showToast(msg){
@@ -1398,7 +1421,7 @@ function showToast(msg){
   window._tt = setTimeout(()=>t.classList.remove('show'),3200);
 }
 
-function goHome(){ window.location.href='index.html'; }
+function goHome(){ window.location.href='/'; }
 
 // Init
 showStep(1);

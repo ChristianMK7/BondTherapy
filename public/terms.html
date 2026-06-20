@@ -17,7 +17,7 @@ header{margin-bottom:32px}
 header a{color:var(--primary);font-weight:600;font-size:.9rem;text-decoration:none}
 h1{font-family:'Playfair Display',serif;font-size:2.2rem;margin:24px 0 8px}
 .updated{color:var(--muted);font-size:.9rem;margin-bottom:24px}
-.placeholder{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:14px 16px;border-radius:12px;font-size:.92rem;margin-bottom:28px}
+
 h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin:28px 0 10px}
 p, li{color:#1f2a44;font-size:.98rem}
 ul{padding-left:22px;margin:8px 0 14px}
@@ -31,53 +31,61 @@ footer{margin-top:32px;color:var(--muted);font-size:.85rem;text-align:center}
   <header><a href="/">← Back to Bond Therapy</a></header>
   <div class="card">
     <h1>Terms of Service</h1>
-    <p class="updated">Last updated: <span id="date"></span></p>
-
-    <div class="placeholder">
-      <strong>Placeholder content.</strong> This page is a template. Replace it with terms reviewed by qualified counsel before public launch.
-    </div>
+    <p class="updated">Last updated: June 10, 2026</p>
 
     <p>By using Bond Therapy, you agree to these terms. Please read them carefully.</p>
 
     <h2>What Bond Therapy is</h2>
-    <p>Bond Therapy is a directory that helps people find licensed therapists and book sessions. We are not a healthcare provider; we do not deliver therapy ourselves. Therapy services are provided by independent professionals listed on the platform.</p>
+    <p>Bond Therapy is a directory and booking platform that helps people in Lebanon find licensed therapists and schedule sessions. We are not a healthcare provider and do not deliver therapy ourselves. Therapy services are provided by independent professionals listed on the platform, who are solely responsible for the care they provide.</p>
 
     <h2>Not a medical or emergency service</h2>
-    <p>Bond Therapy is not a substitute for emergency care. If you are in crisis or experiencing a mental health emergency, contact your local emergency number immediately.</p>
+    <p>Bond Therapy is not a substitute for emergency or crisis care. If you are in crisis, at risk of harming yourself or others, or experiencing a mental health emergency, contact your local emergency number or go to the nearest emergency department immediately. Do not use the platform's booking or messaging features for urgent situations.</p>
 
     <h2>Accounts</h2>
     <ul>
-      <li>You must provide accurate information when creating an account.</li>
-      <li>You are responsible for keeping your password secure.</li>
+      <li>You must provide accurate information when creating an account and keep it up to date.</li>
+      <li>You are responsible for keeping your password secure and for activity that happens under your account.</li>
       <li>You may not impersonate others or create accounts on someone else's behalf without permission.</li>
+      <li>We may suspend or remove accounts that violate these terms or misuse the service.</li>
     </ul>
 
-    <h2>Bookings and payments</h2>
+    <h2>Bookings, payments and fees</h2>
     <ul>
-      <li>Bookings are arrangements between you and the therapist. We facilitate scheduling and payment confirmation.</li>
-      <li>Payment is made via the methods listed at checkout. You agree to provide accurate payment references.</li>
-      <li>Cancellation policies vary by therapist and are shown on their profile.</li>
+      <li>Bookings are arrangements between you and the therapist. We facilitate scheduling, payment confirmation and communication.</li>
+      <li>Payment is made through the methods shown at checkout (such as Whish or OMT). You pay in your own payment app and submit the transaction reference to us; bookings are confirmed once the payment is verified.</li>
+      <li>The price shown at checkout may include a platform service fee on top of the therapist's session price. The total you pay is always shown before you confirm.</li>
+      <li>You agree to submit accurate payment references. Submitting false references may result in cancellation and account suspension.</li>
+      <li>Cancellation policies vary by therapist and are shown on their profile. You can cancel a booking from your account.</li>
     </ul>
 
-    <h2>Therapist listings</h2>
-    <p>Therapists are responsible for the accuracy of their credentials and the services they provide. We review applications but cannot guarantee any outcome of a therapy session.</p>
+    <h2>Therapist listings and applications</h2>
+    <ul>
+      <li>Therapists must hold a valid license and are responsible for the accuracy of their credentials, profile information, pricing and availability.</li>
+      <li>We review applications before listing a therapist, but this review is not an endorsement, and we cannot guarantee any outcome of a therapy session.</li>
+      <li>We may decline or remove a listing at our discretion, including for inaccurate credentials or complaints.</li>
+    </ul>
+
+    <h2>Reviews</h2>
+    <p>Only clients with a confirmed, paid booking can review a therapist, and each booking can be reviewed once. Reviews must be honest and respectful; we may remove reviews that are abusive, fraudulent or unrelated to the session.</p>
+
+    <h2>Messaging</h2>
+    <p>In-app chat is provided to coordinate booked sessions. It is not monitored in real time and must not be used for emergencies. Administrators may access chats to operate the service and investigate misuse, as described in our <a href="/privacy">Privacy Policy</a>.</p>
 
     <h2>Acceptable use</h2>
-    <p>You agree not to misuse the platform, including abusing other users, attempting to access accounts you do not own, or interfering with the operation of the service.</p>
+    <p>You agree not to misuse the platform, including harassing or abusing other users or therapists, attempting to access accounts you do not own, scraping or copying directory data, posting false reviews, or interfering with the operation of the service.</p>
 
     <h2>Limitation of liability</h2>
-    <p>To the maximum extent permitted by law, Bond Therapy is not liable for damages arising from your use of the platform or from interactions with therapists listed on the platform.</p>
+    <p>To the maximum extent permitted by law, Bond Therapy is not liable for indirect or consequential damages arising from your use of the platform, from interactions or sessions with therapists listed on the platform, or from service interruptions. Nothing in these terms limits liability that cannot be limited under applicable law.</p>
 
     <h2>Changes</h2>
-    <p>We may update these terms from time to time. Continued use of the platform after changes means you accept the updated terms.</p>
+    <p>We may update these terms from time to time. We will update the date above when we do. Continued use of the platform after changes take effect means you accept the updated terms.</p>
 
     <h2>Contact</h2>
-    <p>For questions about these terms, please use the contact form on our main site.</p>
+    <p>For questions about these terms, please use the contact form on our main site or the contact details in the footer.</p>
   </div>
   <footer>© <span id="year"></span> Bond Therapy</footer>
 </div>
 <script>
-  document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 </body>
