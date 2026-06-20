@@ -460,6 +460,9 @@
       padding: 80px 0 48px;
       background: linear-gradient(180deg, rgba(240,246,255,.6) 0%, rgba(237,244,255,.4) 100%);
     }
+    /* The light gradient above is for light mode only; in dark mode let the
+       page's dark background show through so it matches the other pages. */
+    [data-theme="dark"] .find-hero { background: none; }
     .search-glass {
       margin-top: 32px;
       background: rgba(255,255,255,.92);
